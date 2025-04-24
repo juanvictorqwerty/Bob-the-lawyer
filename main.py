@@ -11,7 +11,7 @@ def main(page: ft.Page):
     page.padding = 20
 
     # Initialize the model (will load when first used)
-    llm = OllamaLLM(model="phi", temperature=0.7)
+    llm = OllamaLLM(model="phi3.5", temperature=0.7)
     memory = ConversationBufferMemory()
     
     # Create chat messages list
