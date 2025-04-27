@@ -53,7 +53,7 @@ class LegalAssistantApp:
     def _load_model(self):
         """Load the AI model and tokenizer"""
         try:
-            model_path = "C:/Users/JUAN MIKE/Desktop/Projets/Bob-the-lawyer-model/phi-3-local"
+            model_path = "C:/Program Files/Bob-the-lawyer-model/phi-3-local"
             self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
             
             self.model = AutoModelForCausalLM.from_pretrained(
