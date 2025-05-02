@@ -1,0 +1,31 @@
+**Load all messages history conservations
+def load_history():
+    conn = sqlite3.connect("chat_history.db")
+    cursor = conn.cursor()
+    cursor.execute('SELECT sender, message, timestamp FROM messages ORDER BY id')
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+** putting it together
+def start_chat():
+    init_db()
+    print("Previous conversation:\n")
+
+    history = load_history()
+    for sender, msg, ts in history:
+        print(f"[{ts}] {sender.capitalize()}: {msg}")
+
+    print("\nStart chatting with your Law Assistant (type 'exit' to quit):\n")
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() == "exit":
+            print("Goodbye!")
+            break
+
+        save_message("user", user_input)
+
+        # Dummy response logic (replace with actual bot logic)
+        bot_response = "I'm not a lawyer, but I can help you understand legal terms."
+        print("Bot:", bot_response)
+
+        save_message("bot", bot_response)
