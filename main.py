@@ -33,7 +33,7 @@ def main(page: ft.Page):
                     ft.Column(
                         controls=[
                             ft.Text("You" if is_user else "Legal Assistant", 
-                                   weight="bold", size=14),
+                                    weight="bold", size=14),
                             ft.Container(
                                 content=ft.Markdown(
                                     text,
@@ -113,7 +113,7 @@ def main(page: ft.Page):
 
     def load_model():
         try:
-            model_path = "C:\Program Files\Bob-the-lawyer-model\phi-3-local"
+            model_path = "C:/Program Files/Bob-the-lawyer-model/phi-3-local"
             tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
             
             model = AutoModelForCausalLM.from_pretrained(
