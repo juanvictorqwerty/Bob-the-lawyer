@@ -113,7 +113,7 @@ def main(page: ft.Page):
 
     def load_model():
         try:
-            model_path = "C:/Program Files/Bob-the-lawyer-model/phi-3-local"
+            model_path = "C:/Program Files/Bob-the-lawyer-model/tinyllama_model"
             tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
             
             model = AutoModelForCausalLM.from_pretrained(
@@ -128,7 +128,7 @@ def main(page: ft.Page):
                 model=model,
                 tokenizer=tokenizer,
                 max_new_tokens=150,
-                temperature=0.7,
+                temperature=0.5,
                 do_sample=True,
                 top_k=40,
                 top_p=0.9,
