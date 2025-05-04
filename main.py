@@ -2,10 +2,14 @@ import flet as ft
 import requests
 import json
 
+from sidebar import render_sidebar
+
 class LawyerChatBotApp:
     def __init__(self, page: ft.Page):
         self.page = page
+        self.page.theme_mode = ft.ThemeMode.LIGHT
         self.chat = ft.ListView(expand=True, spacing=10, auto_scroll=True)
+        self.sidebar = render_sidebar()
         self.user_input = ft.TextField(
             hint_text="Type your legal question...",
             expand=True,
@@ -21,21 +25,38 @@ class LawyerChatBotApp:
         self.init_ui()
 
     def init_ui(self):
-        self.page.title = "Lawyer Chatbot (Phi)"
-        self.page.theme_mode = ft.ThemeMode.LIGHT
+        self.page.title = "Bob the Lawyer"
         self.page.window_width = 800
         self.page.window_height = 600
         self.page.padding = 20
 
-        input_row = ft.Row([self.user_input, self.send_button], spacing=10)
-
-        self.page.add(
-            ft.Text("Legal Assistant Chatbot", size=24, weight=ft.FontWeight.BOLD),
-            ft.Divider(),
-            self.chat,
-            input_row,
+        # Create sidebar and main area
+        sidebar = self.sidebar  # your ModernNavBar Container
+        main_column = ft.Column(
+            expand=True,
+            controls=[
+                ft.Text("Bob the Lawyer", size=24, weight=ft.FontWeight.BOLD),
+                ft.Divider(),
+                self.chat,
+                ft.Row([self.user_input, self.send_button], spacing=10),
+            ],
         )
+
+        # Layout them side by side
+        content = ft.Row(
+            controls=[
+                sidebar,
+                ft.Container(width=1, bgcolor=ft.colors.GREY_300),  # separator line
+                main_column
+            ],
+            expand=True,
+        )
+
+        self.page.add(content)
         self.user_input.focus()
+
+
+
 
     def send_click(self, e):
         question = self.user_input.value.strip()
@@ -45,7 +66,7 @@ class LawyerChatBotApp:
         # Display user message
         self.chat.controls.append(
             ft.Container(
-                ft.Text(f"You: {question}"),
+                ft.Text(f"YOU: {question}"),
                 alignment=ft.alignment.center_right,
                 bgcolor=ft.colors.BLUE_100,
                 padding=10,
@@ -94,7 +115,7 @@ class LawyerChatBotApp:
         self.chat.controls.remove(thinking)
         self.chat.controls.append(
             ft.Container(
-                ft.Text(f"Lawyer Bot: {reply}"),
+                ft.Text(f"BOB: {reply}"),
                 alignment=ft.alignment.center_left,
                 bgcolor=ft.colors.GREEN_100,
                 padding=10,
@@ -110,5 +131,7 @@ class LawyerChatBotApp:
 
 def main(page: ft.Page):
     LawyerChatBotApp(page)
+    sidebar_content = render_sidebar()
+    print(sidebar_content)
 
 ft.app(target=main)
