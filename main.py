@@ -1,15 +1,14 @@
+# app.py
 import flet as ft
-import requests
-import json
-
-from sidebar import render_sidebar
+from model_handler import generate_reply
+from sidebar import render_sidebar  # Optional sidebar module if you use one
 
 class LawyerChatBotApp:
     def __init__(self, page: ft.Page):
         self.page = page
         self.page.theme_mode = ft.ThemeMode.LIGHT
         self.chat = ft.ListView(expand=True, spacing=10, auto_scroll=True)
-        self.sidebar = render_sidebar()
+        self.sidebar = render_sidebar() if 'render_sidebar' in globals() else ft.Container()
         self.user_input = ft.TextField(
             hint_text="Type your legal question...",
             expand=True,
@@ -30,8 +29,6 @@ class LawyerChatBotApp:
         self.page.window_height = 600
         self.page.padding = 20
 
-        # Create sidebar and main area
-        sidebar = self.sidebar  # your ModernNavBar Container
         main_column = ft.Column(
             expand=True,
             controls=[
@@ -42,12 +39,11 @@ class LawyerChatBotApp:
             ],
         )
 
-        # Layout them side by side
         content = ft.Row(
             controls=[
-                sidebar,
-                ft.Container(width=1, bgcolor=ft.colors.GREY_300),  # separator line
-                main_column
+                self.sidebar,
+                ft.Container(width=1, bgcolor=ft.colors.GREY_300),
+                main_column,
             ],
             expand=True,
         )
@@ -55,15 +51,11 @@ class LawyerChatBotApp:
         self.page.add(content)
         self.user_input.focus()
 
-
-
-
     def send_click(self, e):
         question = self.user_input.value.strip()
         if not question:
             return
 
-        # Display user message
         self.chat.controls.append(
             ft.Container(
                 ft.Text(f"YOU: {question}"),
@@ -74,11 +66,10 @@ class LawyerChatBotApp:
             )
         )
 
-        # Thinking indicator
         thinking = ft.Container(
             ft.Row([
                 ft.ProgressRing(width=20, height=20, stroke_width=2),
-                ft.Text("Processing your question...")
+                ft.Text("Thinking...")
             ], spacing=10),
             alignment=ft.alignment.center_left,
         )
@@ -87,31 +78,10 @@ class LawyerChatBotApp:
         self.page.update()
 
         try:
-            # Call Ollama API
-            response = requests.post(
-                "http://localhost:11434/api/generate",
-                json={
-                    "model": "phi3.5",
-                    "prompt": question,
-                    "stream": False
-                },
-                timeout=30
-            )
-
-            if response.status_code == 200:
-                data = response.json()
-                reply = data.get('response', "⚠️ Unexpected response format.")
-            else:
-                reply = f"⚠️ Error {response.status_code}: {response.text}"
-
-        except requests.exceptions.RequestException as err:
-            reply = f"⚠️ Connection error: {str(err)}"
-        except json.JSONDecodeError:
-            reply = "⚠️ Invalid JSON from API"
+            reply = generate_reply(question)
         except Exception as err:
-            reply = f"⚠️ Unexpected error: {str(err)}"
+            reply = f"⚠️ Error: {str(err)}"
 
-        # Update chat
         self.chat.controls.remove(thinking)
         self.chat.controls.append(
             ft.Container(
@@ -131,7 +101,5 @@ class LawyerChatBotApp:
 
 def main(page: ft.Page):
     LawyerChatBotApp(page)
-    sidebar_content = render_sidebar()
-    print(sidebar_content)
 
 ft.app(target=main)
