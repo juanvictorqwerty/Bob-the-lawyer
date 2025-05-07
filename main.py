@@ -24,7 +24,7 @@ class LawyerChatBotApp:
         self.init_ui()
 
     def init_ui(self):
-        self.page.title = "Bob the Lawyer"
+        self.page.title = "Bob the lawyer"
         self.page.window_width = 800
         self.page.window_height = 600
         self.page.padding = 20
@@ -32,7 +32,7 @@ class LawyerChatBotApp:
         main_column = ft.Column(
             expand=True,
             controls=[
-                ft.Text("Bob the Lawyer", size=24, weight=ft.FontWeight.BOLD),
+                ft.Text("Chat", size=24, weight=ft.FontWeight.BOLD),
                 ft.Divider(),
                 self.chat,
                 ft.Row([self.user_input, self.send_button], spacing=10),
@@ -75,6 +75,7 @@ class LawyerChatBotApp:
         )
         self.chat.controls.append(thinking)
         self.user_input.disabled = True
+        self.send_button.disabled=True
         self.page.update()
 
         try:
@@ -95,6 +96,7 @@ class LawyerChatBotApp:
 
         self.user_input.value = ""
         self.user_input.disabled = False
+        self.send_button.disabled= False
         self.page.update()
         self.user_input.focus()
 

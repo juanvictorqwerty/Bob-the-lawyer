@@ -12,6 +12,7 @@ class ModernNavBar(ft.Container):
                 horizontal_alignment=ft.CrossAxisAlignment.START,
                 spacing=5,
                 controls=[
+                    #self.content(ft.Text("Bob the lawyer", size=16, weight=ft.FontWeight.BOLD)),
                     self.contained_icon(ft.icons.HOME_FILLED, "Home", 1),
                     self.contained_icon(ft.icons.SEARCH, "Search", None),
                     self.contained_icon(ft.icons.DASHBOARD_ROUNDED, "Dashboard", 2),

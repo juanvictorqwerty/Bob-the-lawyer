@@ -1,10 +1,9 @@
 import pdfplumber
-import os
 from pathlib import Path
 
-def pdf_to_txt(input_pdf_path, output_txt_path):
+def pdf_to_text(input_pdf_path):
     """
-    Extract text from a PDF and save as a TXT file
+    Extract text from a PDF and return as string
     """
     try:
         with pdfplumber.open(input_pdf_path) as pdf:
@@ -14,31 +13,37 @@ def pdf_to_txt(input_pdf_path, output_txt_path):
                 page_text = page.extract_text()
                 if page_text:
                     text += page_text + "\n\n"  # Add spacing between pages
-            
-            # Save to TXT file
-            with open(output_txt_path, "w", encoding="utf-8") as f:
-                f.write(text)
-        print(f"Successfully converted: {input_pdf_path} -> {output_txt_path}")
+            return text
     
     except Exception as e:
         print(f"Error processing {input_pdf_path}: {str(e)}")
+        return None
 
-def batch_pdf_to_txt(input_dir, output_dir):
+def batch_pdf_to_single_txt(input_dir, output_file_path):
     """
-    Convert all PDFs in a directory to TXT files
+    Convert all PDFs in a directory to a single TXT file
     """
     input_dir = Path(input_dir)
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_file_path = Path(output_file_path)
+    
+    # Create parent directory if it doesn't exist
+    output_file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    for pdf_file in input_dir.glob("*.pdf"):
-        txt_file = output_dir / f"{pdf_file.stem}.txt"
-        pdf_to_txt(pdf_file, txt_file)
+    with open(output_file_path, "w", encoding="utf-8") as output_file:
+        for pdf_file in input_dir.glob("*.pdf"):
+            print(f"Processing: {pdf_file.name}")
+            pdf_text = pdf_to_text(pdf_file)
+            if pdf_text:
+                # Add separator with PDF filename
+                output_file.write(f"\n\n=== {pdf_file.name} ===\n\n")
+                output_file.write(pdf_text)
+    
+    print(f"All PDFs combined and saved to: {output_file_path}")
 
 if __name__ == "__main__":
-    # Set your input/output directories
-    PDF_DIR = "C:/Users/JUAN MIKE/Desktop/Bob-the-lawyer/Bob-the-lawyer/Laws/Conventions"  # Folder containing your PDFs
-    TXT_DIR = "C:/Users/JUAN MIKE/Desktop/Bob-the-lawyer/Bob-the-lawyer/Create_dataset/ConventionsTXT" # Folder to save TXT files
+    # Set your input/output paths
+    PDF_DIR = r"C:\Users\JUAN MIKE\Desktop\Bob-the-lawyer\Bob-the-lawyer\LOIS_LAWS"
+    OUTPUT_TXT = "C:/Users/JUAN MIKE/Desktop/Bob-the-lawyer/Bob-the-lawyer/Create_dataset/CameroonLaw.txt"
     
-    # Convert all PDFs in directory
-    batch_pdf_to_txt(PDF_DIR, TXT_DIR)
+    # Convert all PDFs to a single TXT file
+    batch_pdf_to_single_txt(PDF_DIR, OUTPUT_TXT)
