@@ -9,8 +9,11 @@ MODEL_PATH = r"C:\Program Files\Bob-the-lawyer-model\tinyllama_model"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
 model = AutoModelForCausalLM.from_pretrained(MODEL_PATH)
 
-# Initialize the pipeline once
+# Check and set device
 device = 0 if torch.cuda.is_available() else -1
+print(f"Using {'CUDA' if device == 0 else 'CPU'} for inference")
+
+# Initialize the pipeline once
 chat_pipeline = pipeline(
     "text-generation",
     model=model,
