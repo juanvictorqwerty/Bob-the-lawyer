@@ -1,5 +1,6 @@
-# app.py
 import flet as ft
+import sqlite3
+from datetime import datetime
 from model_handler import generate_reply
 from sidebar import render_sidebar  # Optional sidebar module if you use one
 
@@ -21,7 +22,62 @@ class LawyerChatBotApp:
             on_click=self.send_click,
             tooltip="Send question",
         )
+        
+        # Initialize database and load previous messages
+        self.initialize_database()
+        self.load_previous_messages()
         self.init_ui()
+
+    def initialize_database(self):
+        """Create database and table if they don't exist"""
+        self.conn = sqlite3.connect('database.db')
+        self.cursor = self.conn.cursor()
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender TEXT NOT NULL,
+                message TEXT NOT NULL,
+                timestamp DATETIME NOT NULL
+            )
+        ''')
+        self.conn.commit()
+
+    def load_previous_messages(self):
+        """Load previous messages from database when app starts"""
+        self.cursor.execute('SELECT sender, message FROM messages ORDER BY timestamp')
+        messages = self.cursor.fetchall()
+        
+        for sender, message in messages:
+            if sender == "user":
+                self.chat.controls.append(
+                    ft.Container(
+                        ft.Text(f"YOU: {message}"),
+                        alignment=ft.alignment.center_right,
+                        bgcolor=ft.colors.BLUE_100,
+                        padding=10,
+                        border_radius=10,
+                    )
+                )
+            else:  # bot or system messages
+                self.chat.controls.append(
+                    ft.Container(
+                        ft.Text(f"BOB: {message}"),
+                        alignment=ft.alignment.center_left,
+                        bgcolor=ft.colors.GREEN_100,
+                        padding=10,
+                        border_radius=10,
+                    )
+                )
+        self.page.update()
+
+    def store_message(self, sender, message):
+        """Store a message in the database"""
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.cursor.execute('''
+            INSERT INTO messages (sender, message, timestamp)
+            VALUES (?, ?, ?)
+        ''', (sender, message, timestamp))
+        self.conn.commit()
 
     def init_ui(self):
         self.page.title = "Bob the lawyer"
@@ -56,6 +112,9 @@ class LawyerChatBotApp:
         if not question:
             return
 
+        # Store user message in database
+        self.store_message("user", question)
+
         self.chat.controls.append(
             ft.Container(
                 ft.Text(f"YOU: {question}"),
@@ -80,8 +139,11 @@ class LawyerChatBotApp:
 
         try:
             reply = generate_reply(question)
+            # Store bot reply in database
+            self.store_message("bot", reply)
         except Exception as err:
             reply = f"⚠️ Error: {str(err)}"
+            self.store_message("system", f"Error: {str(err)}")
 
         self.chat.controls.remove(thinking)
         self.chat.controls.append(
@@ -99,6 +161,11 @@ class LawyerChatBotApp:
         self.send_button.disabled= False
         self.page.update()
         self.user_input.focus()
+
+    def __del__(self):
+        """Close database connection when the app is closed"""
+        if hasattr(self, 'conn'):
+            self.conn.close()
 
 
 def main(page: ft.Page):
