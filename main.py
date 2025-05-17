@@ -50,22 +50,86 @@ class LawyerChatBotApp:
         for sender, message in messages:
             if sender == "user":
                 self.chat.controls.append(
-                    ft.Container(
-                        ft.Text(f"YOU: {message}"),
-                        alignment=ft.alignment.center_right,
-                        bgcolor=ft.colors.BLUE_100,
-                        padding=10,
-                        border_radius=10,
+                    ft.Row(
+                        [
+                            ft.Container(
+                                content=ft.Column(
+                                    [
+                                        ft.Text(
+                                            message,
+                                            selectable=True,
+                                            size=15,
+                                            color=ft.colors.BLACK,
+                                        )
+                                    ],
+                                    tight=True,
+                                ),
+                                alignment=ft.alignment.center_right,
+                                bgcolor=ft.colors.BLUE_100,
+                                padding=ft.padding.symmetric(horizontal=14, vertical=10),
+                                border_radius=ft.border_radius.only(
+                                    top_left=16,
+                                    top_right=16,
+                                    bottom_left=16,
+                                    bottom_right=4,
+                                ),
+                                margin=ft.margin.only(bottom=6),
+                                shadow=ft.BoxShadow(
+                                    spread_radius=0.5,
+                                    blur_radius=3,
+                                    color=ft.colors.with_opacity(0.1, ft.colors.BLACK),
+                                    offset=ft.Offset(0, 1.5),
+                                ),
+                            )
+                        ],
+                        alignment=ft.MainAxisAlignment.END,
                     )
+
+
+
                 )
             else:  # bot or system messages
-                self.chat.controls.append(
-                    ft.Container(
-                        ft.Text(f"BOB: {message}"),
-                        alignment=ft.alignment.center_left,
-                        bgcolor=ft.colors.GREEN_100,
-                        padding=10,
-                        border_radius=10,
+               self.chat.controls.append(
+                    ft.Row(
+                        [
+                            ft.Container(
+                                content=ft.Column(
+                                    [
+                                        ft.Text(
+                                            "BOB:",
+                                            size=15,
+                                            weight=ft.FontWeight.BOLD,
+                                            color=ft.colors.BLUE_800,
+                                        ),
+                                        ft.Text(
+                                            message,
+                                            selectable=True,
+                                            size=15,
+                                            color=ft.colors.BLACK,
+                                        )
+                                    ],
+                                    spacing=4,
+                                    tight=True,
+                                ),
+                                alignment=ft.alignment.center_left,
+                                bgcolor=ft.colors.GREEN_100,
+                                padding=ft.padding.symmetric(horizontal=14, vertical=10),
+                                border_radius=ft.border_radius.only(
+                                    top_left=16,
+                                    top_right=16,
+                                    bottom_left=4,
+                                    bottom_right=16,
+                                ),
+                                margin=ft.margin.only(bottom=6),
+                                shadow=ft.BoxShadow(
+                                    spread_radius=0.5,
+                                    blur_radius=3,
+                                    color=ft.colors.with_opacity(0.1, ft.colors.BLACK),
+                                    offset=ft.Offset(0, 1.5),
+                                ),
+                            )
+                        ],
+                        alignment=ft.MainAxisAlignment.START,
                     )
                 )
         self.page.update()
@@ -116,14 +180,44 @@ class LawyerChatBotApp:
         self.store_message("user", question)
 
         self.chat.controls.append(
-            ft.Container(
-                ft.Text(f"YOU: {question}"),
-                alignment=ft.alignment.center_right,
-                bgcolor=ft.colors.BLUE_100,
-                padding=10,
-                border_radius=10,
-            )
-        )
+                    ft.Row(
+                        [
+                            ft.Container(
+                                content=ft.Column(
+                                    [
+                                        ft.Text(
+                                            question,
+                                            selectable=True,
+                                            size=15,
+                                            color=ft.colors.BLACK,
+                                        )
+                                    ],
+                                    tight=True,
+                                ),
+                                alignment=ft.alignment.center_right,
+                                bgcolor=ft.colors.BLUE_100,
+                                padding=ft.padding.symmetric(horizontal=14, vertical=10),
+                                border_radius=ft.border_radius.only(
+                                    top_left=16,
+                                    top_right=16,
+                                    bottom_left=16,
+                                    bottom_right=4,
+                                ),
+                                margin=ft.margin.only(bottom=6),
+                                shadow=ft.BoxShadow(
+                                    spread_radius=0.5,
+                                    blur_radius=3,
+                                    color=ft.colors.with_opacity(0.1, ft.colors.BLACK),
+                                    offset=ft.Offset(0, 1.5),
+                                ),
+                            )
+                        ],
+                        alignment=ft.MainAxisAlignment.END,
+                    )
+
+
+
+                )
 
         thinking = ft.Container(
             ft.Row([
@@ -147,14 +241,48 @@ class LawyerChatBotApp:
 
         self.chat.controls.remove(thinking)
         self.chat.controls.append(
-            ft.Container(
-                ft.Text(f"BOB: {reply}"),
-                alignment=ft.alignment.center_left,
-                bgcolor=ft.colors.GREEN_100,
-                padding=10,
-                border_radius=10,
+                ft.Row(
+                    [
+                        ft.Container(
+                            content=ft.Column(
+                                [
+                                    ft.Text(
+                                        "BOB:",
+                                        size=15,
+                                        weight=ft.FontWeight.BOLD,
+                                        color=ft.colors.BLUE_800,
+                                    ),
+                                    ft.Text(
+                                        reply,
+                                        selectable=True,
+                                        size=15,
+                                        color=ft.colors.BLACK,
+                                    )
+                                ],
+                                spacing=4,
+                                tight=True,
+                            ),
+                            alignment=ft.alignment.center_left,
+                            bgcolor=ft.colors.GREEN_100,
+                            padding=ft.padding.symmetric(horizontal=14, vertical=10),
+                            border_radius=ft.border_radius.only(
+                                top_left=16,
+                                top_right=16,
+                                bottom_left=4,
+                                bottom_right=16,
+                            ),
+                            margin=ft.margin.only(bottom=6),
+                            shadow=ft.BoxShadow(
+                                spread_radius=0.5,
+                                blur_radius=3,
+                                color=ft.colors.with_opacity(0.1, ft.colors.BLACK),
+                                offset=ft.Offset(0, 1.5),
+                            ),
+                        )
+                    ],
+                    alignment=ft.MainAxisAlignment.START,
+                )
             )
-        )
 
         self.user_input.value = ""
         self.user_input.disabled = False
