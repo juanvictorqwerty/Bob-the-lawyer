@@ -89,7 +89,7 @@ class LawyerChatBotApp:
 
                 )
             else:  # bot or system messages
-               self.chat.controls.append(
+                self.chat.controls.append(
                     ft.Row(
                         [
                             ft.Container(
