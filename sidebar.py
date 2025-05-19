@@ -3,11 +3,11 @@ import asyncio
 from typing import Callable, Optional
 
 class ModernNavBar(ft.Container):
-    def _init_(self, on_navigation: Optional[Callable] = None):
+    def __init__(self, on_navigation: Optional[Callable] = None):
         self.active_index = 1  # Default to Chat
         self.on_navigation = on_navigation
         
-        super()._init_(
+        super().__init__(
             alignment=ft.alignment.center,
             padding=10,
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
@@ -62,7 +62,7 @@ class ModernNavBar(ft.Container):
                     ),
                     self.contained_icon(ft.icons.UPLOAD_FILE, "Upload Files", 3),
                     self.contained_icon(ft.icons.DESCRIPTION, "My Documents", 4),
-                    self.contained_icon(ft.icons.PDF_BOX, "PDF Viewer", 5),
+                    self.contained_icon(ft.icons.PICTURE_AS_PDF, "PDF Viewer", 5),
                     
                     # Image and camera
                     ft.Container(
