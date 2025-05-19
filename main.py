@@ -179,14 +179,14 @@ class LawyerChatBotApp:
                         spacing=4,
                         tight=True,
                     ),
-                    alignment=ft.alignment.center_left,
-                    bgcolor=ft.colors.GREY_100,
+                    alignment=ft.alignment.center_right,  # Changed to right alignment
+                    bgcolor=ft.colors.BLUE_100,  # Changed to match user message color
                     padding=ft.padding.symmetric(horizontal=14, vertical=10),
                     border_radius=ft.border_radius.only(
                         top_left=16,
                         top_right=16,
-                        bottom_left=4,
-                        bottom_right=16,
+                        bottom_left=16,
+                        bottom_right=4,
                     ),
                     margin=ft.margin.only(bottom=6),
                     shadow=ft.BoxShadow(
@@ -197,7 +197,7 @@ class LawyerChatBotApp:
                     ),
                 )
             ],
-            alignment=ft.MainAxisAlignment.START,
+            alignment=ft.MainAxisAlignment.END,  # This makes the row right-aligned
         )
 
     def store_message(self, sender, message):
@@ -276,27 +276,74 @@ class LawyerChatBotApp:
                 else:
                     text = f"Unsupported file type: {file_ext}"
                 
-                # Store file content in the database
-                self.store_message("file", f"{file_name}: {text[:200]}...")
-                
-                # Add to current files list
+                # Store file content
                 self.current_files.append({
                     "name": file_name,
                     "path": file_path,
                     "content": text
                 })
                 
-                # Show file preview in chat
+                # Show file preview as user message
                 preview = text[:200] + "..." if len(text) > 200 else text
                 self.chat.controls.append(
                     self.create_file_message(file_name, preview))
-                    
+                
+                # Store in database as user message
+                self.store_message("user", f"Uploaded document: {file_name}")
+                self.store_message("file", f"{file_name}: {text[:200]}...")
+                
             except Exception as ex:
                 error_msg = f"Error processing {file_name}: {str(ex)}"
                 self.chat.controls.append(
                     self.create_bot_message(error_msg))
-                
+                    
         self.page.update()
+
+    def send_documents_for_analysis(self):
+        if not self.current_files:
+            return
+
+        # Build context from all uploaded files
+        context = "\n\n[Uploaded Documents]\n"
+        for file in self.current_files:
+            context += f"\nDocument: {file['name']}\nContent:\n{file['content'][:1000]}\n"
+
+        # Store the action in database
+        self.store_message("user", "Uploaded documents for analysis")
+
+        # Show thinking indicator
+        thinking = ft.Container(
+            ft.Row([
+                ft.ProgressRing(width=20, height=20, stroke_width=2),
+                ft.Text("Analyzing documents...")
+            ], spacing=10),
+            alignment=ft.alignment.center_left,
+        )
+        self.chat.controls.append(thinking)
+        self.user_input.disabled = False
+        self.send_button.disabled = False
+        self.upload_button.disabled = False
+        self.page.update()
+
+        try:
+            # Generate reply using the document context
+            reply = generate_reply("Please analyze these documents:" + context)
+            self.store_message("bot", reply)
+        except Exception as err:
+            reply = f"⚠️ Error: {str(err)}"
+            self.store_message("system", f"Error: {str(err)}")
+
+        # Update UI with response
+        self.chat.controls.remove(thinking)
+        self.chat.controls.append(self.create_bot_message(reply))
+
+        # Reset UI state
+        self.current_files = []  # Clear files after processing
+        self.user_input.disabled = False
+        self.send_button.disabled = False
+        self.upload_button.disabled = False
+        self.page.update()
+        self.user_input.focus()
 
     def extract_text_from_pdf(self, file_path: str) -> str:
         text = []
