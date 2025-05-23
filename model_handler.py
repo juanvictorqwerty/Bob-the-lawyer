@@ -1,4 +1,4 @@
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, StoppingCriteriaList, StoppingCriteria
 import torch
 
 # System prompt
@@ -20,6 +20,17 @@ chat_pipeline = pipeline(
     tokenizer=tokenizer,
     device=device,
 )
+
+class StopOnTokens(StoppingCriteria):
+        def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
+            stop_tokens = [
+                tokenizer.convert_tokens_to_ids("."),
+                tokenizer.convert_tokens_to_ids("?"),
+                tokenizer.convert_tokens_to_ids("!"),
+                tokenizer.convert_tokens_to_ids("\n"),
+                tokenizer.eos_token_id,
+            ]
+            return input_ids[0][-1].item() in stop_tokens  
 
 def generate_reply(user_input: str,
                     max_new_tokens: int = 100,
@@ -43,7 +54,7 @@ def generate_reply(user_input: str,
         f"<|user|> {user_input}\n"
         f"<|assistant|>"
     )
-    
+
     # Generate response
     outputs = chat_pipeline(
         prompt,
@@ -53,7 +64,9 @@ def generate_reply(user_input: str,
         top_p=top_p,
         pad_token_id=tokenizer.eos_token_id,
         eos_token_id=tokenizer.eos_token_id,
+        stopping_criteria=StoppingCriteriaList([StopOnTokens()]),  # Defined below
+        repetition_penalty=1.2, 
     )
-    
+
     # Extract and return the assistant's response
     return outputs[0]['generated_text'].split("<|assistant|>")[-1].strip()

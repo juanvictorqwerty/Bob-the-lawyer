@@ -18,7 +18,7 @@ class ModernNavBar(ft.Container):
                 controls=[
                     ft.Container(
                         padding=ft.padding.only(bottom=20),
-                        content=ft.Text("Database Tables", size=16, weight=ft.FontWeight.BOLD)
+                        content=ft.Text("Bob the lawyer", size=16, weight=ft.FontWeight.BOLD)
                     ),
                     *self.create_table_list_items(table_names),
                 ],

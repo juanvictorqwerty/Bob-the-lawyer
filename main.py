@@ -155,6 +155,7 @@ class LawyerChatBotApp:
                 )
             ],
             alignment=ft.MainAxisAlignment.START,
+            scroll=ft.ScrollMode.AUTO,
         )
 
     def create_file_message(self, file_name, content_preview):
