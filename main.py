@@ -19,15 +19,24 @@ import pytesseract
 class LawyerChatBotApp:
     def __init__(self, page: ft.Page):
         self.page = page
-        self.page.theme_mode = ft.ThemeMode.LIGHT
+        self.page.theme_mode = ft.ThemeMode.LIGHT  # Default to light theme
         self.chat = ft.ListView(expand=True, spacing=10, auto_scroll=True)
+        
+        # Theme toggle button
+        self.theme_toggle = ft.IconButton(
+            icon=ft.icons.DARK_MODE,
+            on_click=self.toggle_theme,
+            tooltip="Toggle dark/light mode",
+        )
+        
         # Initialize file picker
         self.file_picker = ft.FilePicker(
             on_result=self.handle_file_upload,
-            # Removed allow_multiple parameter
         )
         self.page.overlay.append(self.file_picker)
         self.sidebar = render_sidebar() if 'render_sidebar' in globals() else ft.Container()
+        
+        # Input controls
         self.user_input = ft.TextField(
             hint_text="Type your legal question or upload documents...",
             expand=True,
@@ -51,6 +60,7 @@ class LawyerChatBotApp:
         self.initialize_database()
         self.load_previous_messages()
         self.init_ui()
+        self.update_theme_colors()  # Set initial theme colors
 
     def initialize_database(self):
         """Create database and table if they don't exist"""
@@ -79,22 +89,18 @@ class LawyerChatBotApp:
         self.page.update()
 
     def create_user_message(self, message):
+        is_dark = self.page.theme_mode == ft.ThemeMode.DARK
         return ft.Row(
             [
                 ft.Container(
-                    content=ft.Column(
-                        [
-                            ft.Text(
-                                message,
-                                selectable=True,
-                                size=15,
-                                color=ft.colors.BLACK,
-                            )
-                        ],
-                        tight=True,
+                    content=ft.Text(
+                        message,
+                        selectable=True,
+                        size=15,
+                        color=ft.colors.WHITE if is_dark else ft.colors.BLACK,
                     ),
                     alignment=ft.alignment.center_right,
-                    bgcolor=ft.colors.BLUE_100,
+                    bgcolor=ft.colors.BLUE_800 if is_dark else ft.colors.BLUE_100,
                     padding=ft.padding.symmetric(horizontal=14, vertical=10),
                     border_radius=ft.border_radius.only(
                         top_left=16,
@@ -115,6 +121,7 @@ class LawyerChatBotApp:
         )
 
     def create_bot_message(self, message):
+        is_dark = self.page.theme_mode == ft.ThemeMode.DARK
         return ft.Row(
             [
                 ft.Container(
@@ -124,20 +131,20 @@ class LawyerChatBotApp:
                                 "BOB:",
                                 size=15,
                                 weight=ft.FontWeight.BOLD,
-                                color=ft.colors.BLUE_800,
+                                color=ft.colors.BLUE_200 if is_dark else ft.colors.BLUE_800,
                             ),
                             ft.Text(
                                 message,
                                 selectable=True,
                                 size=15,
-                                color=ft.colors.BLACK,
+                                color=ft.colors.WHITE if is_dark else ft.colors.BLACK,
                             )
                         ],
                         spacing=4,
                         tight=True,
                     ),
                     alignment=ft.alignment.center_left,
-                    bgcolor=ft.colors.GREEN_100,
+                    bgcolor=ft.colors.GREEN_800 if is_dark else ft.colors.GREEN_100,
                     padding=ft.padding.symmetric(horizontal=14, vertical=10),
                     border_radius=ft.border_radius.only(
                         top_left=16,
@@ -155,10 +162,10 @@ class LawyerChatBotApp:
                 )
             ],
             alignment=ft.MainAxisAlignment.START,
-            scroll=ft.ScrollMode.AUTO,
         )
 
     def create_file_message(self, file_name, content_preview):
+        is_dark = self.page.theme_mode == ft.ThemeMode.DARK
         return ft.Row(
             [
                 ft.Container(
@@ -168,20 +175,20 @@ class LawyerChatBotApp:
                                 f"📄 {file_name}",
                                 size=15,
                                 weight=ft.FontWeight.BOLD,
-                                color=ft.colors.BLUE_800,
+                                color=ft.colors.WHITE if is_dark else ft.colors.BLUE_800,
                             ),
                             ft.Text(
                                 content_preview,
                                 selectable=True,
                                 size=12,
-                                color=ft.colors.BLACK,
+                                color=ft.colors.WHITE if is_dark else ft.colors.BLACK,
                             )
                         ],
                         spacing=4,
                         tight=True,
                     ),
-                    alignment=ft.alignment.center_right,  # Changed to right alignment
-                    bgcolor=ft.colors.BLUE_100,  # Changed to match user message color
+                    alignment=ft.alignment.center_right,
+                    bgcolor=ft.colors.BLUE_800 if is_dark else ft.colors.BLUE_100,
                     padding=ft.padding.symmetric(horizontal=14, vertical=10),
                     border_radius=ft.border_radius.only(
                         top_left=16,
@@ -198,7 +205,7 @@ class LawyerChatBotApp:
                     ),
                 )
             ],
-            alignment=ft.MainAxisAlignment.END,  # This makes the row right-aligned
+            alignment=ft.MainAxisAlignment.END,
         )
 
     def store_message(self, sender, message):
@@ -210,17 +217,58 @@ class LawyerChatBotApp:
         ''', (sender, message, timestamp))
         self.conn.commit()
 
+    def toggle_theme(self, e):
+        """Toggle between light and dark theme"""
+        self.page.theme_mode = (
+            ft.ThemeMode.DARK
+            if self.page.theme_mode == ft.ThemeMode.LIGHT
+            else ft.ThemeMode.LIGHT
+        )
+        self.theme_toggle.icon = (
+            ft.icons.LIGHT_MODE
+            if self.page.theme_mode == ft.ThemeMode.DARK
+            else ft.icons.DARK_MODE
+        )
+        self.update_theme_colors()
+        self.page.update()
+
+    def update_theme_colors(self):
+        """Update all color references based on current theme"""
+        is_dark = self.page.theme_mode == ft.ThemeMode.DARK
+        
+        # Update page colors
+        self.page.bgcolor = ft.colors.GREY_900 if is_dark else ft.colors.GREY_50
+        
+        # Update input field
+        self.user_input.color = ft.colors.WHITE if is_dark else ft.colors.BLACK
+        self.user_input.bgcolor = ft.colors.with_opacity(0.1, ft.colors.GREY_500 if is_dark else ft.colors.GREY_200)
+        self.user_input.border_color = ft.colors.GREY_600 if is_dark else ft.colors.GREY_300
+        
+        # Update buttons
+        self.send_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLACK
+        self.upload_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLACK
+        self.theme_toggle.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLACK
+
     def init_ui(self):
         self.page.title = "Bob the lawyer"
         self.page.window_width = 900
         self.page.window_height = 700
         self.page.padding = 20
 
+        # Header with title and theme toggle
+        header = ft.Row(
+            controls=[
+                ft.Text("Chat", size=24, weight=ft.FontWeight.BOLD),
+                self.theme_toggle,
+            ],
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+        )
+
         main_column = ft.Column(
             expand=True,
             controls=[
-                ft.Text("Chat", size=24, weight=ft.FontWeight.BOLD),
-                ft.Divider(),
+                header,
+                ft.Divider(color=ft.colors.GREY_600 if self.page.theme_mode == ft.ThemeMode.DARK else ft.colors.GREY_300),
                 self.chat,
                 ft.Row(
                     [
@@ -237,7 +285,7 @@ class LawyerChatBotApp:
         content = ft.Row(
             controls=[
                 self.sidebar,
-                ft.Container(width=1, bgcolor=ft.colors.GREY_300),
+                ft.Container(width=1, bgcolor=ft.colors.GREY_600 if self.page.theme_mode == ft.ThemeMode.DARK else ft.colors.GREY_300),
                 main_column,
             ],
             expand=True,
@@ -300,52 +348,6 @@ class LawyerChatBotApp:
                     
         self.page.update()
 
-    def send_documents_for_analysis(self):
-        if not self.current_files:
-            return
-
-        # Build context from all uploaded files
-        context = "\n\n[Uploaded Documents]\n"
-        for file in self.current_files:
-            context += f"\nDocument: {file['name']}\nContent:\n{file['content'][:1000]}\n"
-
-        # Store the action in database
-        self.store_message("user", "Uploaded documents for analysis")
-
-        # Show thinking indicator
-        thinking = ft.Container(
-            ft.Row([
-                ft.ProgressRing(width=20, height=20, stroke_width=2),
-                ft.Text("Analyzing documents...")
-            ], spacing=10),
-            alignment=ft.alignment.center_left,
-        )
-        self.chat.controls.append(thinking)
-        self.user_input.disabled = False
-        self.send_button.disabled = False
-        self.upload_button.disabled = False
-        self.page.update()
-
-        try:
-            # Generate reply using the document context
-            reply = generate_reply("Please analyze these documents:" + context)
-            self.store_message("bot", reply)
-        except Exception as err:
-            reply = f"⚠️ Error: {str(err)}"
-            self.store_message("system", f"Error: {str(err)}")
-
-        # Update UI with response
-        self.chat.controls.remove(thinking)
-        self.chat.controls.append(self.create_bot_message(reply))
-
-        # Reset UI state
-        self.current_files = []  # Clear files after processing
-        self.user_input.disabled = False
-        self.send_button.disabled = False
-        self.upload_button.disabled = False
-        self.page.update()
-        self.user_input.focus()
-
     def extract_text_from_pdf(self, file_path: str) -> str:
         text = []
         with open(file_path, 'rb') as file:
@@ -373,10 +375,8 @@ class LawyerChatBotApp:
 
     def extract_text_from_image(self, file_path: str) -> str:
         try:
-            # Try to use pytesseract if available
             return pytesseract.image_to_string(Image.open(file_path))
         except:
-            # Fallback to simple text if OCR fails
             return f"Image file detected but OCR not available: {file_path}"
 
     def send_click(self, e):
