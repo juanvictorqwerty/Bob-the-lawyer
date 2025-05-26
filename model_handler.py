@@ -5,9 +5,16 @@ import torch
 SYSTEM_PROMPT = "Respond conversationally and concisely. Do not make any conversation examples"
 
 # Pre-load tokenizer and model globally
-MODEL_PATH = r"C:\Program Files\Bob-the-lawyer-model\tinyllama_model"
-tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-model = AutoModelForCausalLM.from_pretrained(MODEL_PATH)
+try:
+    MODEL_PATH = r"C:\Program Files\Bob-the-lawyer-model\tinyllama_model"
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+    model = AutoModelForCausalLM.from_pretrained(MODEL_PATH)
+except:
+    MODEL_PATH = "C:/Users/royce/Documents/Bob-the-lawyer-model/tinyllama_model"
+
+    # Load the tokenizer and model locally without trying to download from Hugging Face
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, local_files_only=True)
+    model = AutoModelForCausalLM.from_pretrained(MODEL_PATH, local_files_only=True)
 
 # Check and set device
 device = 0 if torch.cuda.is_available() else -1
