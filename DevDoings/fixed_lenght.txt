@@ -1,0 +1,50 @@
+ def create_bot_message(self, message):
+        is_dark = self.page.theme_mode == ft.ThemeMode.DARK
+        return ft.Row(
+            [
+                ft.Container(
+                    content=ft.Column(
+                        [
+                            ft.Text(
+                                "BOB:",
+                                size=15,
+                                weight=ft.FontWeight.BOLD,
+                                color=ft.colors.BLUE_200 if is_dark else ft.colors.BLUE_800,
+                            ),
+                            ft.Container(
+                                content=ft.Text(
+                                    message,
+                                    selectable=True,
+                                    size=15,
+                                    color=ft.colors.WHITE if is_dark else ft.colors.BLACK,
+                                ),
+                                
+                            )
+                            
+                        ],
+                        spacing=4,
+                        tight=True,
+                        scroll=ft.ScrollMode.AUTO,
+                    ),
+                    alignment=ft.alignment.center_left,
+                    bgcolor=ft.colors.GREEN_800 if is_dark else ft.colors.GREEN_100,
+                    padding=ft.padding.symmetric(horizontal=14, vertical=10),
+                    border_radius=ft.border_radius.only(
+                        top_left=16,
+                        top_right=16,
+                        bottom_left=4,
+                        bottom_right=16,
+                    ),
+                    margin=ft.margin.only(bottom=6),
+                    shadow=ft.BoxShadow(
+                        spread_radius=0.5,
+                        blur_radius=3,
+                        color=ft.colors.with_opacity(0.1, ft.colors.BLACK),
+                        offset=ft.Offset(0, 1.5),
+                    ),
+                    width=400,  # Set max width
+                )
+            ],
+            alignment=ft.MainAxisAlignment.START,
+            scroll=ft.ScrollMode.AUTO,  # Enable horizontal scrolling if needed
+        )
