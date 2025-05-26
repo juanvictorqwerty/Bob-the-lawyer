@@ -7,6 +7,7 @@ import tempfile
 import os
 from typing import Optional
 import io
+import requests  # Added for web search
 
 # Import file processing libraries
 import PyPDF2
@@ -53,6 +54,11 @@ class LawyerChatBotApp:
             icon=ft.icons.UPLOAD_FILE,
             on_click=self.upload_files,
             tooltip="Upload documents",
+        )
+        self.search_button = ft.IconButton(
+            icon=ft.icons.SEARCH,
+            on_click=self.web_search_click,
+            tooltip="Search the web",
         )
         self.current_files = []  # Stores information about uploaded files
         
@@ -248,6 +254,7 @@ class LawyerChatBotApp:
         self.send_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLACK
         self.upload_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLACK
         self.theme_toggle.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLACK
+        self.search_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLACK
 
     def init_ui(self):
         self.page.title = "Bob the lawyer"
@@ -274,9 +281,10 @@ class LawyerChatBotApp:
                     [
                         self.upload_button,
                         self.user_input,
+                        self.search_button,
                         self.send_button,
                     ],
-                    spacing=10,
+                    spacing=5,
                     alignment=ft.MainAxisAlignment.START,
                 ),
             ],
@@ -414,6 +422,7 @@ class LawyerChatBotApp:
         self.user_input.disabled = True
         self.send_button.disabled = True
         self.upload_button.disabled = True
+        self.search_button.disabled = True
         self.page.update()
 
         try:
@@ -430,8 +439,73 @@ class LawyerChatBotApp:
         self.user_input.disabled = False
         self.send_button.disabled = False
         self.upload_button.disabled = False
+        self.search_button.disabled = False
         self.page.update()
         self.user_input.focus()
+
+    def web_search_click(self, e):
+        """Handle web search button click"""
+        query = self.user_input.value.strip()
+        if not query:
+            return
+
+        # Store and display query
+        self.store_message("user", f"WEB SEARCH: {query}")
+        self.chat.controls.append(self.create_user_message(f"🔍 Searching: {query}"))
+        
+        # Show loading indicator
+        thinking = ft.Container(
+            ft.Row([
+                ft.ProgressRing(width=20, height=20, stroke_width=2),
+                ft.Text("Searching the web...")
+            ], spacing=10),
+            alignment=ft.alignment.center_left,
+        )
+        self.chat.controls.append(thinking)
+        self.user_input.disabled = True
+        self.send_button.disabled = True
+        self.upload_button.disabled = True
+        self.search_button.disabled = True
+        self.page.update()
+
+        try:
+            # Perform search with direct API key
+            api_key = "c993fe8beec5d447b42da49cec429aab6460e9170118ba6eb56473f574705105"
+            params = {
+                "q": query,
+                "engine": "google",
+                "api_key": api_key,
+                "num": 3
+            }
+            
+            response = requests.get("https://serpapi.com/search", params=params, timeout=10)
+            response.raise_for_status()
+            results = response.json()
+            
+            if "organic_results" in results:
+                output = ["🌐 Web Results:"]
+                for idx, res in enumerate(results["organic_results"][:3], 1):
+                    output.append(f"{idx}. {res.get('title', 'No title')}\n   {res.get('snippet', 'No description')}\n   {res.get('link', 'No URL')}\n")
+                result = "\n".join(output)
+            else:
+                result = "🔍 No results found"
+            
+            self.store_message("bot", result)
+            self.chat.controls.remove(thinking)
+            self.chat.controls.append(self.create_bot_message(result))
+            
+        except Exception as err:
+            error_msg = f"⚠️ Search failed: {str(err)}"
+            self.store_message("system", error_msg)
+            self.chat.controls.remove(thinking)
+            self.chat.controls.append(self.create_bot_message(error_msg))
+            
+        self.user_input.value = ""
+        self.user_input.disabled = False
+        self.send_button.disabled = False
+        self.upload_button.disabled = False
+        self.search_button.disabled = False
+        self.page.update()
 
     def __del__(self):
         """Close database connection when the app is closed"""
@@ -443,5 +517,3 @@ def main(page: ft.Page):
     LawyerChatBotApp(page)
 
 ft.app(target=main)
-
-#
