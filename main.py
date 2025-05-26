@@ -22,6 +22,7 @@ class LawyerChatBotApp:
         self.page = page
         self.page.theme_mode = ft.ThemeMode.LIGHT  # Default to light theme
         self.chat = ft.ListView(expand=True, spacing=10, auto_scroll=True)
+        self.current_discussion = "messages"  # Default table name
         
         # Theme toggle button
         self.theme_toggle = ft.IconButton(
@@ -35,7 +36,7 @@ class LawyerChatBotApp:
             on_result=self.handle_file_upload,
         )
         self.page.overlay.append(self.file_picker)
-        self.sidebar = render_sidebar() if 'render_sidebar' in globals() else ft.Container()
+        self.sidebar = render_sidebar(self) if 'render_sidebar' in globals() else ft.Container()
         
         # Input controls
         self.user_input = ft.TextField(
@@ -72,8 +73,8 @@ class LawyerChatBotApp:
         """Create database and table if they don't exist"""
         self.conn = sqlite3.connect('database.db')
         self.cursor = self.conn.cursor()
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS messages (
+        self.cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {self.current_discussion} (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 sender TEXT NOT NULL,
                 message TEXT NOT NULL,
@@ -84,23 +85,44 @@ class LawyerChatBotApp:
 
     def load_previous_messages(self):
         """Load previous messages from database when app starts"""
-        self.cursor.execute('SELECT sender, message FROM messages ORDER BY timestamp')
-        messages = self.cursor.fetchall()
+        self.clear_chat()
         
-        for sender, message in messages:
-            if sender == "user":
-                self.chat.controls.append(self.create_user_message(message))
-            else:  # bot or system messages
-                self.chat.controls.append(self.create_bot_message(message))
+        try:
+            self.cursor.execute(f'SELECT sender, message FROM {self.current_discussion} ORDER BY timestamp')
+            messages = self.cursor.fetchall()
+            
+            for sender, message in messages:
+                if sender == "user":
+                    self.chat.controls.append(self.create_user_message(message))
+                else:  # bot or system messages
+                    self.chat.controls.append(self.create_bot_message(message))
+            self.page.update()
+        except sqlite3.OperationalError as e:
+            print(f"Error loading messages: {str(e)}")
+            self.chat.controls.append(
+                self.create_bot_message(f"⚠️ Error loading discussion: {str(e)}")
+            )
+            self.page.update()
+
+    def clear_chat(self):
+        """Clear the current chat display"""
+        self.chat.controls.clear()
+        self.current_files = []
         self.page.update()
+
+    def switch_discussion(self, table_name):
+        """Switch to a different discussion table"""
+        self.current_discussion = table_name
+        self.load_previous_messages()
 
     def create_user_message(self, message):
         is_dark = self.page.theme_mode == ft.ThemeMode.DARK
         return ft.Row(
-            [
+            controls=[
+                ft.Container(expand=True),  # This pushes the message container to the right
                 ft.Container(
                     content=ft.Text(
-                        message,
+                        value=message,
                         selectable=True,
                         size=15,
                         color=ft.colors.WHITE if is_dark else ft.colors.BLACK,
@@ -123,31 +145,37 @@ class LawyerChatBotApp:
                     ),
                 )
             ],
-            alignment=ft.MainAxisAlignment.END,
+            alignment=ft.MainAxisAlignment.END,  # This ensures right alignment
+            expand=True,
         )
 
     def create_bot_message(self, message):
         is_dark = self.page.theme_mode == ft.ThemeMode.DARK
+        # Calculate width based on message length but cap at 600
+        text_width = min(600, len(message) * 8 + 100)
         return ft.Row(
-            [
+            controls=[
                 ft.Container(
                     content=ft.Column(
-                        [
+                        controls=[
                             ft.Text(
                                 "BOB:",
                                 size=15,
                                 weight=ft.FontWeight.BOLD,
                                 color=ft.colors.BLUE_200 if is_dark else ft.colors.BLUE_800,
                             ),
-                            ft.Text(
-                                message,
-                                selectable=True,
-                                size=15,
-                                color=ft.colors.WHITE if is_dark else ft.colors.BLACK,
+                            ft.Container(
+                                content=ft.Text(
+                                    message,
+                                    selectable=True,
+                                    size=15,
+                                    color=ft.colors.WHITE if is_dark else ft.colors.BLACK,
+                                ),
                             )
                         ],
                         spacing=4,
                         tight=True,
+                        scroll=ft.ScrollMode.AUTO,
                     ),
                     alignment=ft.alignment.center_left,
                     bgcolor=ft.colors.GREEN_800 if is_dark else ft.colors.GREEN_100,
@@ -165,11 +193,14 @@ class LawyerChatBotApp:
                         color=ft.colors.with_opacity(0.1, ft.colors.BLACK),
                         offset=ft.Offset(0, 1.5),
                     ),
+                    width=text_width,  # Use the calculated width
                 )
             ],
             alignment=ft.MainAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.START,
+            expand=True,
+            scroll=ft.ScrollMode.AUTO,
         )
-
     def create_file_message(self, file_name, content_preview):
         is_dark = self.page.theme_mode == ft.ThemeMode.DARK
         return ft.Row(
@@ -217,11 +248,22 @@ class LawyerChatBotApp:
     def store_message(self, sender, message):
         """Store a message in the database"""
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        self.cursor.execute('''
-            INSERT INTO messages (sender, message, timestamp)
-            VALUES (?, ?, ?)
-        ''', (sender, message, timestamp))
-        self.conn.commit()
+        try:
+            self.cursor.execute(f'''
+                INSERT INTO {self.current_discussion} (sender, message, timestamp)
+                VALUES (?, ?, ?)
+            ''', (sender, message, timestamp))
+            self.conn.commit()
+        except sqlite3.OperationalError as e:
+            print(f"Error storing message: {str(e)}")
+            # Try to create the table if it doesn't exist
+            self.initialize_database()
+            # Retry storing the message
+            self.cursor.execute(f'''
+                INSERT INTO {self.current_discussion} (sender, message, timestamp)
+                VALUES (?, ?, ?)
+            ''', (sender, message, timestamp))
+            self.conn.commit()
 
     def toggle_theme(self, e):
         """Toggle between light and dark theme"""
@@ -517,3 +559,5 @@ def main(page: ft.Page):
     LawyerChatBotApp(page)
 
 ft.app(target=main)
+
+
