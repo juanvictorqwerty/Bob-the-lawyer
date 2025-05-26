@@ -3,10 +3,7 @@ import sqlite3
 from datetime import datetime
 from model_handler import generate_reply
 from sidebar import render_sidebar  # Optional sidebar module if you use one
-import tempfile
 import os
-from typing import Optional
-import io
 import requests  # Added for web search
 
 # Import file processing libraries
@@ -14,8 +11,7 @@ import PyPDF2
 from docx import Document
 from pptx import Presentation
 import pandas as pd
-from PIL import Image
-import pytesseract
+
 
 class LawyerChatBotApp:
     def __init__(self, page: ft.Page):
@@ -348,7 +344,6 @@ class LawyerChatBotApp:
         self.file_picker.pick_files(
             allowed_extensions=[
                 "pdf", "docx", "pptx", "xls", "xlsx", 
-                "jpg", "jpeg", "png", "tiff", "bmp"
             ],
         )
         
@@ -370,8 +365,6 @@ class LawyerChatBotApp:
                     text = self.extract_text_from_pptx(file_path)
                 elif file_ext in ('.xls', '.xlsx'):
                     text = self.extract_text_from_excel(file_path)
-                elif file_ext in ('.jpg', '.jpeg', '.png', '.tiff', '.bmp'):
-                    text = self.extract_text_from_image(file_path)
                 else:
                     text = f"Unsupported file type: {file_ext}"
                 
@@ -422,12 +415,6 @@ class LawyerChatBotApp:
     def extract_text_from_excel(self, file_path: str) -> str:
         df = pd.read_excel(file_path)
         return df.to_string()
-
-    def extract_text_from_image(self, file_path: str) -> str:
-        try:
-            return pytesseract.image_to_string(Image.open(file_path))
-        except:
-            return f"Image file detected but OCR not available: {file_path}"
 
     def send_click(self, e):
         question = self.user_input.value.strip()
