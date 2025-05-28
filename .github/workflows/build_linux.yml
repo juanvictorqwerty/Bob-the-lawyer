@@ -50,7 +50,7 @@ jobs:
         echo "flet==$FLET_CLI_VERSION" > requirements.txt
         echo "accelerate" >> requirements.txt
         # Explicitly install CPU-only version of PyTorch
-        echo "torch==2.7.1+cpu --index-url https://download.pytorch.org/whl/cpu" >> requirements.txt
+        echo "torch==2.7.0+cpu --index-url https://download.pytorch.org/whl/cpu" >> requirements.txt
         echo "transformers" >> requirements.txt
         echo "pandas" >> requirements.txt
         echo "python-pptx" >> requirements.txt
