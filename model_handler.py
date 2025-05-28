@@ -1,26 +1,30 @@
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, StoppingCriteriaList, StoppingCriteria
 import torch
+from pathlib import Path
 
 # System prompt
 SYSTEM_PROMPT = "Respond conversationally and concisely. Do not make any conversation examples"
 
-# Pre-load tokenizer and model globally
-try:
-    MODEL_PATH = r"C:\Program Files\Bob-the-lawyer-model\tinyllama_model"
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-    model = AutoModelForCausalLM.from_pretrained(MODEL_PATH)
-except:
-    MODEL_PATH = "C:/Users/royce/Documents/Bob-the-lawyer-model/tinyllama_model"
+# Define model path using pathlib
+MODEL_PATHS = [
+    Path(r"C:\Program Files\Bob-the-lawyer-model\tinyllama_model"),
+    Path.home() / "Documents/Bob-the-lawyer-model/tinyllama_model"
+]
 
-    # Load the tokenizer and model locally without trying to download from Hugging Face
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, local_files_only=True)
-    model = AutoModelForCausalLM.from_pretrained(MODEL_PATH, local_files_only=True)
+# Try loading model from first existing path
+for model_path in MODEL_PATHS:
+    if model_path.exists():
+        tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
+        model = AutoModelForCausalLM.from_pretrained(model_path, local_files_only=True)
+        break
+else:
+    raise FileNotFoundError("Model path not found in any of the expected locations.")
 
 # Check and set device
 device = 0 if torch.cuda.is_available() else -1
 print(f"Using {'CUDA' if device == 0 else 'CPU'} for inference")
 
-# Initialize the pipeline once
+# Initialize the pipeline
 chat_pipeline = pipeline(
     "text-generation",
     model=model,
@@ -28,21 +32,23 @@ chat_pipeline = pipeline(
     device=device,
 )
 
+# Define stopping criteria
 class StopOnTokens(StoppingCriteria):
-        def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
-            stop_tokens = [
-                tokenizer.convert_tokens_to_ids("."),
-                tokenizer.convert_tokens_to_ids("?"),
-                tokenizer.convert_tokens_to_ids("!"),
-                tokenizer.convert_tokens_to_ids("\n"),
-                tokenizer.eos_token_id,
-            ]
-            return input_ids[0][-1].item() in stop_tokens  
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
+        stop_tokens = [
+            tokenizer.convert_tokens_to_ids("."),
+            tokenizer.convert_tokens_to_ids("?"),
+            tokenizer.convert_tokens_to_ids("!"),
+            tokenizer.convert_tokens_to_ids("\n"),
+            tokenizer.eos_token_id,
+        ]
+        return input_ids[0][-1].item() in stop_tokens  
 
+# Chat generation function
 def generate_reply(user_input: str,
-                    max_new_tokens: int = 100,
-                    temperature: float = 0.7,
-                    top_p: float = 0.9) -> str:
+                   max_new_tokens: int = 100,
+                   temperature: float = 0.7,
+                   top_p: float = 0.9) -> str:
     """
     Generates a chat-style reply using the pre-built text-generation pipeline.
 
@@ -71,8 +77,8 @@ def generate_reply(user_input: str,
         top_p=top_p,
         pad_token_id=tokenizer.eos_token_id,
         eos_token_id=tokenizer.eos_token_id,
-        stopping_criteria=StoppingCriteriaList([StopOnTokens()]),  # Defined below
-        repetition_penalty=1.2, 
+        stopping_criteria=StoppingCriteriaList([StopOnTokens()]),
+        repetition_penalty=1.2,
     )
 
     # Extract and return the assistant's response
