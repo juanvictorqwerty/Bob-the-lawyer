@@ -49,15 +49,31 @@ jobs:
           pip freeze > src/requirements.txt
         fi
 
+    - name: Set app name in pubspec.yaml
+      working-directory: ./src
+      run: |
+        # Check if pubspec.yaml exists
+        if [ -f "pubspec.yaml" ]; then
+          # Update the name in pubspec.yaml
+          sed -i "s/name: .*/name: $APP_NAME/" pubspec.yaml
+          echo "Updated pubspec.yaml with app name: $APP_NAME"
+        else
+          echo "pubspec.yaml not found - creating one"
+          echo "name: $APP_NAME" > pubspec.yaml
+          echo "description: A Flet application" >> pubspec.yaml
+          echo "version: $BUILD_VERSION+$BUILD_NUMBER" >> pubspec.yaml
+          echo "environment:" >> pubspec.yaml
+          echo "  sdk: '>=3.0.0 <4.0.0'" >> pubspec.yaml
+        fi
+
     - name: Build Bob Application
       working-directory: ./src
       run: |
         # Clean any previous build artifacts
         rm -rf build/
         
-        # Run build with app name and verbose output
+        # Run build with verbose output
         flet build linux \
-          --name "$APP_NAME" \
           --verbose \
           --build-number=$BUILD_NUMBER \
           --build-version=$BUILD_VERSION
