@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bob-the-lawyer"
+version = "0.1.0"
+description = "A legal chat assistant application with document processing and web search capabilities, powered by a fine-tuned TinyLlama model."
+readme = "README.md" # It's good practice to have a README
+requires-python = "==3.10" # Specify your minimum Python version
+license = {text = "MIT"} # Or your chosen license
+
+authors = [
+    {name = "Group Members", email = "your_email@example.com"}, # Replace with actual details
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha", # Or your project's status
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Legal Industry",
+    "License :: OSI Approved :: MIT License", # Match the license above
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Communications :: Chat",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Office/Business",
+    "Framework :: Flet",
+]
+
+dependencies = [
+    "flet",
+    "requests", # For web search API calls
+    "PyPDF2",   # For PDF processing
+    "python-docx", # For DOCX processing
+    "python-pptx", # For PPTX processing
+    "pandas",      # For Excel processing
+    "openpyxl",    # Required by pandas for .xlsx file support
+    "torch",       # For PyTorch models
+    "transformers",# For Hugging Face models and pipelines
+    "peft",        # For LoRA adapter handling (used in installer and potentially model loading)
+    # "accelerate" # Consider adding if you use advanced model loading features or distributed training
+]
+[tool.flet.app]
+path = "src"
+
+# To make the [project.scripts] entry work, you might need to adjust src/main.py:
+# At the end of src/main.py, ensure you have a function like this:
+#
+# def start_app():
+#     ft.app(target=main) # 'main' is your existing Flet app entry point function
+#
+# And if you want to run it directly with `python src/main.py`, also add:
+# if __name__ == "__main__":
+#     start_app()
