@@ -29,64 +29,80 @@ jobs:
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
         channel: 'stable'
-        cache: true
 
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
 
-    - name: Install system dependencies
+    - name: Install minimal system dependencies
       run: |
         sudo apt-get update -y
         sudo apt-get install -y --no-install-recommends ninja-build libgtk-3-dev patchelf
         sudo apt-get clean
         sudo rm -rf /var/lib/apt/lists/*
 
-    - name: Install Python dependencies
+    - name: Install optimized Python dependencies
       working-directory: ./src
       run: |
         python -m pip install --upgrade pip
-        # Install CPU-only PyTorch first with explicit index URL
-        pip install torch --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
-        # Then install other requirements
-        echo "flet==$FLET_CLI_VERSION" > requirements.txt
-        echo "accelerate" >> requirements.txt
-        echo "transformers" >> requirements.txt
-        echo "pandas" >> requirements.txt
-        echo "python-pptx" >> requirements.txt
-        echo "python-docx" >> requirements.txt
-        echo "pypdf2" >> requirements.txt
-        pip install -r requirements.txt --no-cache-dir
-        # Verify installation
-        python -c "import torch; print(f'PyTorch version: {torch.__version__}, CUDA: {torch.cuda.is_available()}')"
-        pip cache purge
+        # Install CPU-only PyTorch with minimal dependencies
+        pip install torch==2.2.1 --index-url https://download.pytorch.org/whl/cpu --no-deps
+        pip install flet==$FLET_CLI_VERSION
+        # Install other dependencies with minimal versions
+        pip install \
+          accelerate==0.27.2 \
+          transformers==4.38.2 \
+          pandas==2.2.1 \
+          python-pptx==0.6.23 \
+          python-docx==1.1.0 \
+          pypdf2==3.0.1 \
+          --no-cache-dir
+        
+        # Create minimal requirements.txt
+        pip freeze | grep -v 'torch==' > requirements.txt
 
     - name: Configure build
       working-directory: ./src
       run: |
         echo "name: $APP_NAME" > pubspec.yaml
-        echo "description: Bob The Lawyer Application" >> pubspec.yaml
         echo "version: $BUILD_VERSION+$BUILD_NUMBER" >> pubspec.yaml
         echo "environment:" >> pubspec.yaml
         echo "  sdk: '>=3.0.0 <4.0.0'" >> pubspec.yaml
-        
         flutter config --enable-linux-desktop
         flutter pub get
 
-    - name: Build application
+    - name: Build with size optimization
       working-directory: ./src
       run: |
         rm -rf build/
         flet build linux \
           --build-number=$BUILD_NUMBER \
           --build-version=$BUILD_VERSION \
-          --verbose
+          --release \
+          --obfuscate \
+          --split-debug-info=./symbols
+
+    - name: Clean build artifacts
+      working-directory: ./src/build/linux
+      run: |
+        # Remove unnecessary files
+        rm -rf flutter/ephemeral
+        rm -rf flutter/assets/fonts/MaterialIcons-Regular.otf
+        find . -name "*.debug" -delete
+        find . -name "*.symbols" -delete
+        strip -s $(find . -type f -executable)
+
+    - name: Compress final build
+      working-directory: ./src/build
+      run: |
+        mv linux ${APP_NAME}_linux
+        tar -czvf ${APP_NAME}_linux.tar.gz --exclude='*.debug' --exclude='*.symbols' ${APP_NAME}_linux
+        du -sh ${APP_NAME}_linux.tar.gz
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.APP_NAME }}-linux
-        path: src/build/linux
+        path: src/build/${{ env.APP_NAME }}_linux.tar.gz
         if-no-files-found: error
