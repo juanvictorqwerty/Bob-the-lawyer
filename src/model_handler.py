@@ -6,20 +6,31 @@ from pathlib import Path
 SYSTEM_PROMPT = "Respond conversationally and concisely. Do not make any conversation examples"
 
 # Define model path using pathlib
+# Cross-platform model paths (checks local directory first, then standard locations)
 MODEL_PATHS = [
-    Path(r"C:\Program Files\Bob-the-lawyer-model\tinyllama_model"),
-    Path.home() / "Documents/Bob-the-lawyer-model/tinyllama_model"
+    Path("Bob-the-lawyer-model/tinyllama_model"),  # Local directory
+    Path.home() / "Bob-the-lawyer-model/tinyllama_model",  # User home directory
+    Path.home() / "Documents/Bob-the-lawyer-model/tinyllama_model",  # Windows/Mac Documents
+    Path.home() / ".local/share/Bob-the-lawyer-model/tinyllama_model",  # Linux standard data location
 ]
 
 # Try loading model from first existing path
 for model_path in MODEL_PATHS:
     if model_path.exists():
-        tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
-        model = AutoModelForCausalLM.from_pretrained(model_path, local_files_only=True)
-        break
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(str(model_path), local_files_only=True)
+            model = AutoModelForCausalLM.from_pretrained(str(model_path), local_files_only=True)
+            print(f"Model loaded successfully from: {model_path}")
+            break
+        except Exception as e:
+            print(f"Error loading model from {model_path}: {str(e)}")
+            continue
 else:
-    raise FileNotFoundError("Model path not found in any of the expected locations.")
-
+    raise FileNotFoundError(
+        "Model not found in any of these locations:\n" + 
+        "\n".join(f"- {p}" for p in MODEL_PATHS) +
+        "\nPlease ensure the model files are in one of these paths."
+    )
 # Check and set device
 device = 0 if torch.cuda.is_available() else -1
 print(f"Using {'CUDA' if device == 0 else 'CPU'} for inference")
@@ -46,9 +57,9 @@ class StopOnTokens(StoppingCriteria):
 
 # Chat generation function
 def generate_reply(user_input: str,
-                   max_new_tokens: int = 100,
-                   temperature: float = 0.7,
-                   top_p: float = 0.9) -> str:
+                    max_new_tokens: int = 100,
+                    temperature: float = 0.7,
+                    top_p: float = 0.9) -> str:
     """
     Generates a chat-style reply using the pre-built text-generation pipeline.
 
