@@ -472,8 +472,10 @@ class LawyerChatBotApp:
         self.page.update()
         self.user_input.focus()
 
+    
+        
     def web_search_click(self, e):
-        """Handle web search button click"""
+        """Handle web search button click - shows only first result"""
         query = self.user_input.value.strip()
         if not query:
             return
@@ -504,18 +506,19 @@ class LawyerChatBotApp:
                 "q": query,
                 "engine": "google",
                 "api_key": api_key,
-                "num": 3
+                "num": 1  # Only request 1 result
             }
             
             response = requests.get("https://serpapi.com/search", params=params, timeout=10)
             response.raise_for_status()
             results = response.json()
             
-            if "organic_results" in results:
-                output = ["🌐 Web Results:"]
-                for idx, res in enumerate(results["organic_results"][:3], 1):
-                    output.append(f"{idx}. {res.get('title', 'No title')}\n   {res.get('snippet', 'No description')}\n   {res.get('link', 'No URL')}\n")
-                result = "\n".join(output)
+            if "organic_results" in results and len(results["organic_results"]) > 0:
+                res = results["organic_results"][0]
+                result = (f"🌐 Top Result:\n"
+                        f"Title: {res.get('title', 'No title')}\n"
+                        f"Description: {res.get('snippet', 'No description')}\n"
+                        f"URL: {res.get('link', 'No URL')}")
             else:
                 result = "🔍 No results found"
             
