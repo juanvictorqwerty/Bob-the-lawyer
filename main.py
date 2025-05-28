@@ -504,7 +504,7 @@ class LawyerChatBotApp:
                 "q": query,
                 "engine": "google",
                 "api_key": api_key,
-                "num": 3
+                "num": 1
             }
             
             response = requests.get("https://serpapi.com/search", params=params, timeout=10)
@@ -513,7 +513,7 @@ class LawyerChatBotApp:
             
             if "organic_results" in results:
                 output = ["🌐 Web Results:"]
-                for idx, res in enumerate(results["organic_results"][:3], 1):
+                for idx, res in enumerate(results["organic_results"][:1], 1):
                     output.append(f"{idx}. {res.get('title', 'No title')}\n   {res.get('snippet', 'No description')}\n   {res.get('link', 'No URL')}\n")
                 result = "\n".join(output)
             else:
