@@ -28,7 +28,6 @@ class ModernNavBar(ft.Container):
                     *self.create_table_list_items(table_names),
                 ],
             ),
-            border=ft.border.only(right=ft.BorderSide(1, ft.colors.GREY_300)),  # Add right border
         )
 
 
