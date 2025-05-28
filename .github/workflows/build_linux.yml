@@ -1,4 +1,4 @@
-name: Build Bob Application (Linux)
+name: Build Bob Application (Cross-Platform)
 
 on:
   push:
@@ -14,7 +14,6 @@ env:
   PYTHON_VERSION: "3.10.15"
   FLET_CLI_VERSION: "0.27.6"
   FLUTTER_VERSION: "3.27.4"
-  PYTHONUTF8: 1
 
 jobs:
   build-linux:
@@ -42,20 +41,32 @@ jobs:
         sudo apt-get clean
         sudo rm -rf /var/lib/apt/lists/*
 
-    - name: Install Python dependencies
+    - name: Install Python packages (Cross-Platform Safe)
       working-directory: ./src
       run: |
-        python -m pip install --upgrade pip
-        pip install torch==2.7.0 --index-url https://download.pytorch.org/whl/cpu
-        pip install \
+        # Create clean virtual environment
+        python -m venv venv
+        source venv/bin/activate
+
+        # Install packages with explicit platform compatibility
+        pip install --no-cache-dir \
+          --only-binary=:all: \
+          --platform manylinux2014_x86_64 \
+          --implementation cp \
+          --python-version 310 \
+          --target ./python-packages \
+          torch==2.2.1+cpu \
           flet==$FLET_CLI_VERSION \
-          accelerate==1.6.0 \
+          accelerate==0.27.2 \
           transformers==4.38.2 \
           pandas==2.2.1 \
-          python-pptx==1.0.2 \
-          python-docx==1.1.2 \
-          pypdf2==3.0.1 \
-          --no-cache-dir
+          python-pptx==0.6.23 \
+          python-docx==1.1.0 \
+          pypdf2==3.0.1
+
+        # Create platform-neutral requirements.txt
+        pip freeze | grep -v '@' > requirements.txt
+        deactivate
 
     - name: Configure build
       working-directory: ./src
@@ -71,29 +82,20 @@ jobs:
       working-directory: ./src
       run: |
         rm -rf build/
-        flet build linux \
+        PYTHONPATH=$(pwd)/python-packages flet build linux \
           --build-number=$BUILD_NUMBER \
           --build-version=$BUILD_VERSION
 
-    - name: Optimize build size
+    - name: Optimize build
       working-directory: ./src/build/linux
       run: |
-        # Remove debug symbols and unnecessary files
         find . -type f -executable -exec strip -s {} \;
-        rm -rf flutter/ephemeral
-        rm -rf flutter/assets/fonts/MaterialIcons-Regular.otf
+        rm -rf flutter/ephemeral flutter/assets/fonts/MaterialIcons-Regular.otf
         find . -name "*.debug" -delete
 
-    - name: Package build
-      working-directory: ./src/build
-      run: |
-        mv linux ${APP_NAME}_linux
-        tar -czvf ${APP_NAME}_linux.tar.gz ${APP_NAME}_linux
-        du -sh ${APP_NAME}_linux.tar.gz
-
-    - name: Upload artifact
+    - name: Package and upload
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.APP_NAME }}-linux
-        path: src/build/${{ env.APP_NAME }}_linux.tar.gz
+        path: src/build/linux
         if-no-files-found: error
