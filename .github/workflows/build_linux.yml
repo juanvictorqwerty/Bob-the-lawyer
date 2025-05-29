@@ -10,7 +10,7 @@ env:
   APP_NAME: "Bob"
   BUILD_NUMBER: 1
   BUILD_VERSION: "1.0.0"
-  PYTHON_VERSION: "3.10.15"
+  PYTHON_VERSION: "3.11.10"
   FLET_VERSION: "0.27.6"
   FLUTTER_VERSION: "3.27.4"
 
@@ -41,18 +41,39 @@ jobs:
         
     - name: Setup Python environment
       run: |
-        python -m venv flet_env
+        # Create completely isolated environment
+        python -m venv --clear flet_env
         source flet_env/bin/activate
-        python -m pip install --upgrade pip setuptools wheel
+        
+        # Use older pip version that's more stable
+        python -m pip install pip==23.3.1
+        
+        # Set environment variables to avoid conda packages
+        export PYTHONNOUSERSITE=1
+        export PIP_NO_CACHE_DIR=1
+        export PIP_INDEX_URL=https://pypi.org/simple/
+        
+        # Install core packages first
+        pip install setuptools wheel
         
     - name: Install Python dependencies
       run: |
         source flet_env/bin/activate
-        # Install specific versions to avoid conflicts
-        pip install --no-cache-dir \
-          "aiohappyeyeballs==2.3.0" \
-          "aiohttp>=3.8.0" \
-          flet==${{ env.FLET_VERSION }} \
+        export PYTHONNOUSERSITE=1
+        export PIP_NO_CACHE_DIR=1
+        export PIP_INDEX_URL=https://pypi.org/simple/
+        
+        # Try alternative approach: install Flet without problematic dependencies
+        pip install --no-deps flet==${{ env.FLET_VERSION }}
+        
+        # Install Flet's dependencies manually, skipping problematic ones
+        pip install \
+          flet-core \
+          flet-runtime \
+          watchdog \
+          websockets \
+          httpx \
+          packaging \
           pandas \
           python-pptx \
           python-docx \
