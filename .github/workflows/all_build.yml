@@ -54,7 +54,7 @@ jobs:
         run: |
           rm -rf build/
           flet build linux \
-          --name "${{ env.APP_NAME }}" \
+          --project-name "${{ env.APP_NAME }}" \
           --description "Bob The Lawyer Application" \
           --build-number ${{ env.BUILD_NUMBER }} \
           --build-version ${{ env.BUILD_VERSION }} \
