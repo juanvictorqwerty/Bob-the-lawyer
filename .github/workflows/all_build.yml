@@ -54,7 +54,7 @@ jobs:
         run: |
           rm -rf build/
           flet build linux \
-          --project-name "$APP_NAME" \
+          --project "$APP_NAME" \
           --description "Bob The Lawyer Application" \
           --build-number $BUILD_NUMBER \
           --build-version $BUILD_VERSION \
@@ -95,7 +95,7 @@ jobs:
         run: |
           rm -rf build/
           flet build macos \
-          --project-name "$APP_NAME" \
+          --project "$APP_NAME" \
           --description "Bob The Lawyer Application" \
           --build-number $BUILD_NUMBER \
           --build-version $BUILD_VERSION \
@@ -136,7 +136,7 @@ jobs:
         run: |
           Remove-Item -Path build/ -Recurse -Force -ErrorAction SilentlyContinue
           flet build windows `
-          --project-name "$env:APP_NAME" `
+          --project "$env:APP_NAME" `
           --description "Bob The Lawyer Application" `
           --build-number $env:BUILD_NUMBER `
           --build-version $env:BUILD_VERSION `
