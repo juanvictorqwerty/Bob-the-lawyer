@@ -43,14 +43,18 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install flet==${{ env.FLET_VERSION }}
+        # Install PyTorch with CPU support
+        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
+        # Install Hugging Face packages (if needed for your app)
         pip install \
-          torch==2.2.1 --index-url https://download.pytorch.org/whl/cpu \
-          accelerate>=0.20.1 \
-          transformers==4.38.2 \
-          pandas==2.2.1 \
-          python-pptx==0.6.23 \
-          python-docx==1.1.0 \
-          pypdf2==3.0.1 \
+          transformers \
+          --no-cache-dir --no-deps
+        # Install document processing packages
+        pip install \
+          pandas \
+          python-pptx \
+          python-docx \
+          pypdf2 \
           --no-cache-dir
           
     - name: Configure build
