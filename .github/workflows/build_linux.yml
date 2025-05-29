@@ -55,7 +55,7 @@ jobs:
           --implementation cp \
           --python-version 310 \
           --target ./python-packages \
-          pip install torch  --index-url https://download.pytorch.org/whl/cpu
+          torch ==2.7.0
           flet==$FLET_CLI_VERSION \
           accelerate==0.27.2 \
           transformers==4.38.2 \
