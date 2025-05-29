@@ -1,4 +1,4 @@
-name: Build Bob Application (Cross-Platform)
+name: Build Bob Application (Linux)
 
 on:
   push:
@@ -41,20 +41,12 @@ jobs:
         sudo apt-get clean
         sudo rm -rf /var/lib/apt/lists/*
 
-    - name: Install Python packages (Cross-Platform Safe)
-      working-directory: ./src
+    - name: Install Python dependencies
       run: |
-        # Create clean virtual environment
-        python -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
-
-        # Install PyTorch CPU first (using latest stable version)
-        pip install torch --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
-
-        # Install other packages
+        python -m pip install --upgrade pip
+        pip install flet==$FLET_CLI_VERSION
         pip install \
-          flet==$FLET_CLI_VERSION \
+          torch==2.2.1 --index-url https://download.pytorch.org/whl/cpu \
           accelerate==0.27.2 \
           transformers==4.38.2 \
           pandas==2.2.1 \
@@ -62,10 +54,6 @@ jobs:
           python-docx==1.1.0 \
           pypdf2==3.0.1 \
           --no-cache-dir
-
-        # Create platform-neutral requirements.txt
-        pip freeze | grep -v '@' > requirements.txt
-        deactivate
 
     - name: Configure build
       working-directory: ./src
@@ -81,7 +69,7 @@ jobs:
       working-directory: ./src
       run: |
         rm -rf build/
-        PYTHONPATH=$(pwd)/venv/lib/python3.10/site-packages flet build linux \
+        python -m flet build linux \
           --build-number=$BUILD_NUMBER \
           --build-version=$BUILD_VERSION
 
