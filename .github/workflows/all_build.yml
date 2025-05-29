@@ -41,8 +41,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flet==${{ env.FLET_VERSION }}
-          # Install CPU-only PyTorch first with explicit index URL
-          pip install torch --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
+          # Install CPU-only PyTorch - use latest stable or specific version
+          pip install "torch>=2.2.0,<2.8.0" --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
           # Install other requirements from src/requirements.txt
           pip install -r requirements.txt --no-cache-dir
           # Verify installation
@@ -60,12 +60,22 @@ jobs:
           --build-version $BUILD_VERSION \
           --verbose
 
+      - name: Prepare artifact
+        working-directory: ./src
+        run: |
+          # Remove potentially problematic files
+          find build/linux -name "*.pyc" -delete
+          find build/linux -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+          find build/linux -name ".DS_Store" -delete 2>/dev/null || true
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-linux
           path: src/build/linux
           if-no-files-found: error
+          compression-level: 6
+          retention-days: 90
 
   build-macos:
     runs-on: macos-latest
@@ -85,7 +95,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flet==${{ env.FLET_VERSION }}
+          # Install CPU-only PyTorch first with explicit index URL
           pip install torch --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
+          # Install other requirements, excluding torch to avoid conflicts
           pip install -r requirements.txt --no-cache-dir
           python -c "import torch; print(f'PyTorch version: {torch.__version__}, CUDA: {torch.cuda.is_available()}')"
           pip cache purge
@@ -107,6 +119,8 @@ jobs:
           name: ${{ env.APP_NAME }}-macos
           path: src/build/macos
           if-no-files-found: error
+          compression-level: 6
+          retention-days: 90
 
   build-windows:
     runs-on: windows-latest
@@ -149,3 +163,5 @@ jobs:
           name: ${{ env.APP_NAME }}-windows
           path: src/build/windows
           if-no-files-found: error
+          compression-level: 6
+          retention-days: 90
