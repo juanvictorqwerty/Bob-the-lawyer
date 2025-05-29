@@ -58,6 +58,7 @@ jobs:
           --description "Bob The Lawyer Application" \
           --build-number $BUILD_NUMBER \
           --build-version $BUILD_VERSION \
+          --source-packages tqdm transformers torch accelerate tokenizers safetensors huggingface-hub \
           --verbose
 
       - name: Prepare artifact
@@ -67,15 +68,15 @@ jobs:
           find build/linux -name "*.pyc" -delete
           find build/linux -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
           find build/linux -name ".DS_Store" -delete 2>/dev/null || true
+          # Create our own zip to avoid tar issues
+          cd build && zip -r ../Bob-linux.zip linux/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-linux
-          path: src/build/linux
+          path: src/Bob-linux.zip
           if-no-files-found: error
-          compression-level: 6
-          retention-days: 90
 
   build-macos:
     runs-on: macos-latest
@@ -111,6 +112,7 @@ jobs:
           --description "Bob The Lawyer Application" \
           --build-number $BUILD_NUMBER \
           --build-version $BUILD_VERSION \
+          --source-packages tqdm transformers torch accelerate tokenizers safetensors huggingface-hub \
           --verbose
 
       - name: Upload artifact
@@ -154,6 +156,7 @@ jobs:
           --description "Bob The Lawyer Application" `
           --build-number $env:BUILD_NUMBER `
           --build-version $env:BUILD_VERSION `
+          --source-packages tqdm transformers torch accelerate tokenizers safetensors huggingface-hub `
           --no-rich-output `
           --verbose
 
