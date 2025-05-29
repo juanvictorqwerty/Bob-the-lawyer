@@ -54,10 +54,10 @@ jobs:
         run: |
           rm -rf build/
           flet build linux \
-          --project-name "${{ env.APP_NAME }}" \
+          --project-name "$APP_NAME" \
           --description "Bob The Lawyer Application" \
-          --build-number ${{ env.BUILD_NUMBER }} \
-          --build-version ${{ env.BUILD_VERSION }} \
+          --build-number $BUILD_NUMBER \
+          --build-version $BUILD_VERSION \
           --verbose
 
       - name: Upload artifact
@@ -95,10 +95,10 @@ jobs:
         run: |
           rm -rf build/
           flet build macos \
-          --project-name "${{ env.APP_NAME }}" \
+          --project-name "$APP_NAME" \
           --description "Bob The Lawyer Application" \
-          --build-number ${{ env.BUILD_NUMBER }} \
-          --build-version ${{ env.BUILD_VERSION }} \
+          --build-number $BUILD_NUMBER \
+          --build-version $BUILD_VERSION \
           --verbose
 
       - name: Upload artifact
@@ -134,13 +134,13 @@ jobs:
       - name: Build Windows Application
         working-directory: ./src
         run: |
-          rm -rf build/
-          flet build windows \
-          --project-name "${{ env.APP_NAME }}" \
-          --description "Bob The Lawyer Application" \
-          --build-number ${{ env.BUILD_NUMBER }} \
-          --build-version ${{ env.BUILD_VERSION }} \
-          --no-rich-output \
+          Remove-Item -Path build/ -Recurse -Force -ErrorAction SilentlyContinue
+          flet build windows `
+          --project-name "$env:APP_NAME" `
+          --description "Bob The Lawyer Application" `
+          --build-number $env:BUILD_NUMBER `
+          --build-version $env:BUILD_VERSION `
+          --no-rich-output `
           --verbose
 
       - name: Upload artifact
