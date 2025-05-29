@@ -67,11 +67,16 @@ jobs:
         flutter config --enable-linux-desktop
         flutter pub get
         
+    - name: Verify Flet installation
+      run: |
+        flet --version
+        which flet
+        
     - name: Build application
       working-directory: ./src
       run: |
         rm -rf build/
-        python -m flet build linux \
+        flet build linux \
           --build-number=${{ env.BUILD_NUMBER }} \
           --build-version=${{ env.BUILD_VERSION }}
           
