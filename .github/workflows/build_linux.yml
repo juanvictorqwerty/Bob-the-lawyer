@@ -47,22 +47,21 @@ jobs:
         # Create clean virtual environment
         python -m venv venv
         source venv/bin/activate
+        pip install --upgrade pip
 
-        # Install packages with explicit platform compatibility
-        pip install --no-cache-dir \
-          --only-binary=:all: \
-          --platform manylinux2014_x86_64 \
-          --implementation cp \
-          --python-version 310 \
-          --target ./python-packages \
-          torch ==2.7.0
+        # Install PyTorch CPU first (using latest stable version)
+        pip install torch --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
+
+        # Install other packages
+        pip install \
           flet==$FLET_CLI_VERSION \
           accelerate==0.27.2 \
           transformers==4.38.2 \
           pandas==2.2.1 \
           python-pptx==0.6.23 \
           python-docx==1.1.0 \
-          pypdf2==3.0.1
+          pypdf2==3.0.1 \
+          --no-cache-dir
 
         # Create platform-neutral requirements.txt
         pip freeze | grep -v '@' > requirements.txt
@@ -82,7 +81,7 @@ jobs:
       working-directory: ./src
       run: |
         rm -rf build/
-        PYTHONPATH=$(pwd)/python-packages flet build linux \
+        PYTHONPATH=$(pwd)/venv/lib/python3.10/site-packages flet build linux \
           --build-number=$BUILD_NUMBER \
           --build-version=$BUILD_VERSION
 
