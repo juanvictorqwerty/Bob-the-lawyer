@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      install_mode:
+        description: 'Installation mode'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - development
 
 env:
   APP_NAME: "Bob"
@@ -14,7 +23,7 @@ env:
   PYTHON_VERSION: "3.10.11"
   FLET_VERSION: "0.27.6"
   PYTHONUTF8: 1
-  INSTALL_MODE: "production" # Can be "production" or "development"
+  INSTALL_MODE: ${{ github.event.inputs.install_mode || 'production' }}
 
 jobs:
   build-linux:
@@ -23,7 +32,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Needed for development install
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -45,18 +54,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install flet==${{ env.FLET_VERSION }}
           
-          # Development mode installation if specified
           if [ "${{ env.INSTALL_MODE }}" = "development" ]; then
             pip install -e '.[dev]'
             echo "Installed in development mode with all dev dependencies"
           else
-            # Production installation
             pip install tqdm>=4.27 packaging>=23.0
             pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
             pip install -r requirements.txt --no-cache-dir
           fi
           
-          # Verification
           python -c "import torch; print(f'PyTorch: {torch.__version__}')"
           python -c "import tqdm; print(f'tqdm: {tqdm.__version__}')"
           pip cache purge
@@ -111,8 +117,9 @@ jobs:
             pip install -e '.[dev]'
             echo "Installed in development mode with all dev dependencies"
           else
-            # Skip problematic packages on macOS
-            pip install -r <(grep -v "xformers" requirements.txt) --no-cache-dir
+            grep -v "xformers" requirements.txt > filtered_requirements.txt
+            pip install -r filtered_requirements.txt --no-cache-dir
+            rm filtered_requirements.txt
           fi
           
           python -c "import transformers; print('Transformers:', transformers.__version__)"
@@ -160,9 +167,9 @@ jobs:
             pip install -e '.[dev]'
             Write-Host "Installed in development mode with all dev dependencies"
           } else {
-            pip install tqdm>=4.27 packaging>=23.0
-            pip install torch --index-url https://download.pytorch.org/whl/cpu
-            pip install -r requirements.txt --no-cache-dir
+            Select-String -Path requirements.txt -NotMatch "xformers" | Out-File -FilePath filtered_requirements.txt -Encoding utf8
+            pip install -r filtered_requirements.txt --no-cache-dir
+            Remove-Item filtered_requirements.txt
           }
           
           python -c "import torch; print(f'PyTorch: {torch.__version__}')"
