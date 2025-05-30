@@ -53,6 +53,7 @@ jobs:
             --project "${APP_NAME}"  \
             --build-number $BUILD_NUMBER \
             --build-version $BUILD_VERSION \
+            --include-package tqdm \
             --verbose
 
       - name: Prepare artifact
@@ -97,6 +98,7 @@ jobs:
             --project "${APP_NAME}"  \
             --build-number $BUILD_NUMBER \
             --build-version $BUILD_VERSION \
+            --include-package tqdm \
             --verbose
 
       - name: Prepare macOS artifact
@@ -143,6 +145,7 @@ jobs:
             --project "$env:APP_NAME" `
             --build-number $env:BUILD_NUMBER `
             --build-version $env:BUILD_VERSION `
+            --include-package tqdm `
             --verbose
 
       - name: Prepare Windows artifact
