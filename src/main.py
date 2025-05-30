@@ -578,6 +578,6 @@ class LawyerChatBotApp:
 def main(page: ft.Page):
     LawyerChatBotApp(page)
 
-ft.app(target=main)
+ft.app(target=main, view=ft.WEB_BROWSER)
 
 

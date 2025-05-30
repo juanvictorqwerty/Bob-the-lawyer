@@ -1,35 +1,38 @@
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, StoppingCriteriaList, StoppingCriteria
 import torch
+from peft import PeftModel # Import PeftModel
 from pathlib import Path
 
 # System prompt
 SYSTEM_PROMPT = "Respond conversationally and concisely. Do not make any conversation examples"
 
-# Define model path using pathlib
-# Cross-platform model paths (checks local directory first, then standard locations)
-MODEL_PATHS = [
-    Path("Bob-the-lawyer-model/tinyllama_model"),  # Local directory
-    Path.home() / "Bob-the-lawyer-model/tinyllama_model",  # User home directory
-    Path.home() / "Documents/Bob-the-lawyer-model/tinyllama_model",  # Windows/Mac Documents
-    Path.home() / ".local/share/Bob-the-lawyer-model/tinyllama_model",  # Linux standard data location
-]
+# Define the Hugging Face model identifier
+# Replace this with the specific TinyLlama model you want to use from the Hub
+BASE_MODEL_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0" # Base model
+ADAPTER_ID = "juanvic/tinyllama-cameroon-law-lora"    # Your fine-tuned adapter
 
-# Try loading model from first existing path
-for model_path in MODEL_PATHS:
-    if model_path.exists():
-        try:
-            tokenizer = AutoTokenizer.from_pretrained(str(model_path), local_files_only=True)
-            model = AutoModelForCausalLM.from_pretrained(str(model_path), local_files_only=True)
-            print(f"Model loaded successfully from: {model_path}")
-            break
-        except Exception as e:
-            print(f"Error loading model from {model_path}: {str(e)}")
-            continue
-else:
-    raise FileNotFoundError(
-        "Model not found in any of these locations:\n" + 
-        "\n".join(f"- {p}" for p in MODEL_PATHS) +
-        "\nPlease ensure the model files are in one of these paths."
+try:
+    # Load tokenizer from the base model
+    # local_files_only=False (default) will download if not cached
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_ID)
+    
+    # Load the base model
+    base_model = AutoModelForCausalLM.from_pretrained(BASE_MODEL_ID)
+    print(f"Base model '{BASE_MODEL_ID}' loaded successfully from Hugging Face Hub or cache.")
+
+    # Load the LoRA adapter and apply it to the base model
+    model = PeftModel.from_pretrained(base_model, ADAPTER_ID)
+    print(f"Adapter '{ADAPTER_ID}' loaded and applied to the base model.")
+
+except Exception as e:
+    print(f"Error loading model '{BASE_MODEL_ID}' or adapter '{ADAPTER_ID}' from Hugging Face Hub: {str(e)}")
+    # This is a critical error for the app's functionality.
+    # Ensure you have an internet connection and the model ID is correct.
+    raise RuntimeError(
+        f"Failed to load base model '{BASE_MODEL_ID}' or adapter '{ADAPTER_ID}' from Hugging Face Hub. "
+        "Please check your internet connection and the model identifier. "
+        "If running in a restricted environment, ensure it can access huggingface.co. "
+        f"Original error: {e}"
     )
 # Check and set device
 device = 0 if torch.cuda.is_available() else -1
