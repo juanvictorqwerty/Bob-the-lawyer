@@ -42,15 +42,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install flet==${{ env.FLET_VERSION }}
           
-          # Force CPU-only PyTorch installation - explicitly avoid CUDA
+          # Force CPU-only PyTorch installation - let pip decide compatible versions
           pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
           
-          # Install transformers and related packages
-          pip install transformers tokenizers safetensors huggingface-hub accelerate --no-cache-dir
-          
-          # Install essential dependencies from requirements.txt, excluding torch variants
-          pip install -r requirements.txt --no-cache-dir \
-            --extra-index-url https://download.pytorch.org/whl/cpu
+          # Install requirements.txt and let pip resolve versions automatically
+          pip install -r requirements.txt --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu
           
           # Verify CPU-only installation
           python -c "import torch; print(f'PyTorch version: {torch.__version__}, CUDA available: {torch.cuda.is_available()}, CPU only: {not torch.cuda.is_available()}')"
@@ -128,14 +124,22 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
-      - name: Install Python dependencies
+      - name: Install Python dependencies (CPU-only, no CUDA)
         working-directory: ./src
         run: |
           python -m pip install --upgrade pip
           pip install flet==${{ env.FLET_VERSION }}
-          pip install torch --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
-          pip install -r requirements.txt --no-cache-dir
-          python -c "import torch; print(f'PyTorch version: {torch.__version__}, CUDA: {torch.cuda.is_available()}')"
+          
+          # Force CPU-only PyTorch installation - let pip decide compatible versions
+          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
+          
+          # Install requirements.txt and let pip resolve versions automatically
+          pip install -r requirements.txt --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu
+          
+          # Verify CPU-only installation
+          python -c "import torch; print(f'PyTorch version: {torch.__version__}, CUDA available: {torch.cuda.is_available()}, CPU only: {not torch.cuda.is_available()}')"
+          
+          # Clean up
           pip cache purge
 
       - name: Build macOS Application
@@ -155,4 +159,61 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-macos
-          path:
+          path: src/build/macos
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 90
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install Python dependencies (CPU-only, no CUDA)
+        working-directory: ./src
+        run: |
+          python -m pip install --upgrade pip
+          pip install flet==${{ env.FLET_VERSION }}
+          
+          # Force CPU-only PyTorch installation - explicitly avoid CUDA
+          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
+          
+          # Install requirements.txt with CPU-only torch index
+          pip install -r requirements.txt --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu
+          
+          # Verify CPU-only installation
+          python -c "import torch; print('PyTorch version: ' + torch.__version__ + ', CUDA available: ' + str(torch.cuda.is_available()) + ', CPU only: ' + str(not torch.cuda.is_available()))"
+          
+          # Clean up
+          pip cache purge
+
+      - name: Build Windows Application
+        working-directory: ./src
+        run: |
+          Remove-Item -Path build/ -Recurse -Force -ErrorAction SilentlyContinue
+          flet build windows `
+          --project "$env:APP_NAME" `
+          --description "Bob The Lawyer Application" `
+          --build-number $env:BUILD_NUMBER `
+          --build-version $env:BUILD_VERSION `
+          --source-packages tqdm transformers torch accelerate tokenizers safetensors huggingface-hub `
+          --optimize `
+          --no-rich-output `
+          --verbose
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-windows
+          path: src/build/windows
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 90
