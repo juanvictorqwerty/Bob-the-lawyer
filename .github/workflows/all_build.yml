@@ -46,8 +46,12 @@ jobs:
           # Install CPU-only PyTorch first
           pip install torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cpu
           
-          # Filter out GPU-related packages
-          grep -Ev "xformers|nvidia-cuda-nvcc|bitsandbytes|cuda|nvidia" requirements.txt > cpu_requirements.txt
+          # Create filtered requirements by reading line by line
+          while IFS= read -r line; do
+            if [[ ! "$line" =~ xformers|nvidia-cuda-nvcc|bitsandbytes|cuda|nvidia ]]; then
+              echo "$line" >> cpu_requirements.txt
+            fi
+          done < requirements.txt
           
           # Install filtered requirements
           pip install -r cpu_requirements.txt --no-cache-dir
@@ -104,8 +108,13 @@ jobs:
           # Install CPU-only PyTorch
           pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cpu
           
-          # Filter out GPU packages
-          grep -Ev "xformers|nvidia-cuda-nvcc|bitsandbytes|cuda|nvidia" requirements.txt > cpu_requirements.txt
+          # Create filtered requirements
+          while IFS= read -r line; do
+            if [[ ! "$line" =~ xformers|nvidia-cuda-nvcc|bitsandbytes|cuda|nvidia ]]; then
+              echo "$line" >> cpu_requirements.txt
+            fi
+          done < requirements.txt
+          
           pip install -r cpu_requirements.txt --no-cache-dir
           rm cpu_requirements.txt
           
@@ -153,7 +162,7 @@ jobs:
           pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cpu
           
           # Filter out GPU packages in Windows
-          Select-String -Path requirements.txt -NotMatch "xformers|nvidia-cuda-nvcc|bitsandbytes|cuda|nvidia" | 
+          Get-Content requirements.txt | Where-Object { $_ -notmatch 'xformers|nvidia-cuda-nvcc|bitsandbytes|cuda|nvidia' } | 
             Out-File -FilePath cpu_requirements.txt -Encoding utf8
           pip install -r cpu_requirements.txt --no-cache-dir
           Remove-Item cpu_requirements.txt
