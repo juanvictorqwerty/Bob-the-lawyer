@@ -19,6 +19,7 @@ class LawyerChatBotApp:
         self.page.theme_mode = ft.ThemeMode.LIGHT  # Default to light theme
         self.chat = ft.ListView(expand=True, spacing=10, auto_scroll=True)
         self.current_discussion = "messages"  # Default table name
+        self.port = int(os.environ.get("PORT", 8550))
         
         # Theme toggle button
         self.theme_toggle = ft.IconButton(
@@ -578,6 +579,19 @@ class LawyerChatBotApp:
 def main(page: ft.Page):
     LawyerChatBotApp(page)
 
-ft.app(target=main, view=ft.WEB_BROWSER)
+if __name__ == "__main__":
+    # Get the port from the PORT environment variable.
+    # If PORT is not set (e.g., running locally without it), default to 8550.
+    # Render (or other hosting platforms) will set the PORT environment variable.
+    port = int(os.environ.get("PORT", 8550))
 
-
+    # Using ft.FLET_APP_WEB is the more current way to have Flet
+    # attempt to open the application in your default web browser.
+    view_mode = ft.FLET_APP_WEB
+    
+    ft.app(
+        target=main,
+        port=port,
+        host="0.0.0.0",
+        view=view_mode
+    )
