@@ -1,4 +1,4 @@
-name: Build Bob Application (Linux)
+name: Build Bob Application (Multi-Platform)
 
 on:
   push:
@@ -12,16 +12,18 @@ env:
   BUILD_NUMBER: 1
   BUILD_VERSION: "1.0.0"
   PYTHON_VERSION: "3.10.11"
-  FLET_VERSION: "0.27.6" # Renamed for clarity, refers to flet package version
+  FLET_VERSION: "0.27.6"
   PYTHONUTF8: 1
+  INSTALL_MODE: "production" # Can be "production" or "development"
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Needed for development install
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -32,7 +34,8 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends ninja-build libgtk-3-dev patchelf
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build libgtk-3-dev patchelf libgl1 build-essential
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
@@ -41,12 +44,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flet==${{ env.FLET_VERSION }}
-          # Install CPU-only PyTorch - use latest stable or specific version
-          pip install "torch>=2.2.0,<2.8.0" --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
-          # Install other requirements from src/requirements.txt
-          pip install -r requirements.txt --no-cache-dir
-          # Verify installation
-          python -c "import torch; print(f'PyTorch version: {torch.__version__}, CUDA: {torch.cuda.is_available()}')"
+          
+          # Development mode installation if specified
+          if [ "${{ env.INSTALL_MODE }}" = "development" ]; then
+            pip install -e '.[dev]'
+            echo "Installed in development mode with all dev dependencies"
+          else
+            # Production installation
+            pip install tqdm>=4.27 packaging>=23.0
+            pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+            pip install -r requirements.txt --no-cache-dir
+          fi
+          
+          # Verification
+          python -c "import torch; print(f'PyTorch: {torch.__version__}')"
+          python -c "import tqdm; print(f'tqdm: {tqdm.__version__}')"
           pip cache purge
 
       - name: Build application
@@ -54,35 +66,34 @@ jobs:
         run: |
           rm -rf build/
           flet build linux \
-          --project "$APP_NAME" \
-          --description "Bob The Lawyer Application" \
-          --build-number $BUILD_NUMBER \
-          --build-version $BUILD_VERSION \
-          --verbose
+            --project "$APP_NAME" \
+            --description "Bob The Lawyer Application" \
+            --build-number $BUILD_NUMBER \
+            --build-version $BUILD_VERSION \
+            --source-packages tqdm transformers torch \
+            --verbose
 
       - name: Prepare artifact
         working-directory: ./src
         run: |
-          # Remove potentially problematic files
           find build/linux -name "*.pyc" -delete
-          find build/linux -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
-          find build/linux -name ".DS_Store" -delete 2>/dev/null || true
+          find build/linux -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          cd build && zip -r ../Bob-linux.zip linux/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-linux
-          path: src/build/linux
-          if-no-files-found: error
-          compression-level: 6
+          name: ${{ env.APP_NAME }}-linux-${{ env.INSTALL_MODE }}
+          path: src/Bob-linux.zip
           retention-days: 90
 
   build-macos:
     runs-on: macos-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -95,11 +106,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flet==${{ env.FLET_VERSION }}
-          # Install CPU-only PyTorch first with explicit index URL
-          pip install torch --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
-          # Install other requirements, excluding torch to avoid conflicts
-          pip install -r requirements.txt --no-cache-dir
-          python -c "import torch; print(f'PyTorch version: {torch.__version__}, CUDA: {torch.cuda.is_available()}')"
+          
+          if [ "${{ env.INSTALL_MODE }}" = "development" ]; then
+            pip install -e '.[dev]'
+            echo "Installed in development mode with all dev dependencies"
+          else
+            # Skip problematic packages on macOS
+            pip install -r <(grep -v "xformers" requirements.txt) --no-cache-dir
+          fi
+          
+          python -c "import transformers; print('Transformers:', transformers.__version__)"
           pip cache purge
 
       - name: Build macOS Application
@@ -107,27 +123,26 @@ jobs:
         run: |
           rm -rf build/
           flet build macos \
-          --project "$APP_NAME" \
-          --description "Bob The Lawyer Application" \
-          --build-number $BUILD_NUMBER \
-          --build-version $BUILD_VERSION \
-          --verbose
+            --project "$APP_NAME" \
+            --description "Bob The Lawyer Application" \
+            --build-number $BUILD_NUMBER \
+            --build-version $BUILD_VERSION \
+            --verbose
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-macos
+          name: ${{ env.APP_NAME }}-macos-${{ env.INSTALL_MODE }}
           path: src/build/macos
-          if-no-files-found: error
-          compression-level: 6
           retention-days: 90
 
   build-windows:
     runs-on: windows-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -140,28 +155,33 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flet==${{ env.FLET_VERSION }}
-          pip install torch --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
-          pip install -r requirements.txt --no-cache-dir
-          python -c "import torch; print('PyTorch version: ' + torch.__version__ + ', CUDA: ' + str(torch.cuda.is_available()))"
-          pip cache purge
+          
+          if ("${{ env.INSTALL_MODE }}" -eq "development") {
+            pip install -e '.[dev]'
+            Write-Host "Installed in development mode with all dev dependencies"
+          } else {
+            pip install tqdm>=4.27 packaging>=23.0
+            pip install torch --index-url https://download.pytorch.org/whl/cpu
+            pip install -r requirements.txt --no-cache-dir
+          }
+          
+          python -c "import torch; print(f'PyTorch: {torch.__version__}')"
 
       - name: Build Windows Application
         working-directory: ./src
         run: |
           Remove-Item -Path build/ -Recurse -Force -ErrorAction SilentlyContinue
           flet build windows `
-          --project "$env:APP_NAME" `
-          --description "Bob The Lawyer Application" `
-          --build-number $env:BUILD_NUMBER `
-          --build-version $env:BUILD_VERSION `
-          --no-rich-output `
-          --verbose
+            --project "$env:APP_NAME" `
+            --description "Bob The Lawyer Application" `
+            --build-number $env:BUILD_NUMBER `
+            --build-version $env:BUILD_VERSION `
+            --source-packages tqdm transformers torch `
+            --verbose
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-windows
+          name: ${{ env.APP_NAME }}-windows-${{ env.INSTALL_MODE }}
           path: src/build/windows
-          if-no-files-found: error
-          compression-level: 6
           retention-days: 90
