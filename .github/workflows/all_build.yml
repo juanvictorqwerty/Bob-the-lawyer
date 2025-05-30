@@ -1,4 +1,4 @@
-name: Build Bob Application (Multi-Platform)
+name: Build Bob Application (CPU-Only)
 
 on:
   push:
@@ -14,7 +14,6 @@ env:
   PYTHON_VERSION: "3.10.11"
   FLET_VERSION: "0.27.6"
   PYTHONUTF8: 1
-  INSTALL_MODE: "production" # Can be "production" or "development"
 
 jobs:
   build-linux:
@@ -22,8 +21,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Needed for development install
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -35,30 +32,29 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends \
-            ninja-build libgtk-3-dev patchelf libgl1 build-essential
+            ninja-build libgtk-3-dev patchelf libgl1 build-essential \
+            libglib2.0-0 libsm6 libxrender1 libxext6
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-      - name: Install Python dependencies
+      - name: Install Python dependencies (CPU-only)
         working-directory: ./src
         run: |
           python -m pip install --upgrade pip
-          pip install flet==${{ env.FLET_VERSION }}
+          pip install flet==${{ env.FLET_VERSION }} flet-cli==${{ env.FLET_VERSION }} flet-desktop==${{ env.FLET_VERSION }}
           
-          # Development mode installation if specified
-          if [ "${{ env.INSTALL_MODE }}" = "development" ]; then
-            pip install -e '.[dev]'
-            echo "Installed in development mode with all dev dependencies"
-          else
-            # Production installation
-            pip install tqdm>=4.27 packaging>=23.0
-            pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-            pip install -r requirements.txt --no-cache-dir
-          fi
+          # Install CPU-only PyTorch first
+          pip install torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cpu
+          
+          # Filter out GPU-related packages
+          grep -Ev "xformers|nvidia-cuda-nvcc|bitsandbytes|cuda|nvidia" requirements.txt > cpu_requirements.txt
+          
+          # Install filtered requirements
+          pip install -r cpu_requirements.txt --no-cache-dir
+          rm cpu_requirements.txt
           
           # Verification
-          python -c "import torch; print(f'PyTorch: {torch.__version__}')"
-          python -c "import tqdm; print(f'tqdm: {tqdm.__version__}')"
+          python -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.cuda.is_available()}')"
           pip cache purge
 
       - name: Build application
@@ -70,7 +66,7 @@ jobs:
             --description "Bob The Lawyer Application" \
             --build-number $BUILD_NUMBER \
             --build-version $BUILD_VERSION \
-            --source-packages tqdm transformers torch \
+            --source-packages tqdm transformers torch accelerate tokenizers safetensors huggingface-hub \
             --verbose
 
       - name: Prepare artifact
@@ -83,7 +79,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-linux-${{ env.INSTALL_MODE }}
+          name: ${{ env.APP_NAME }}-linux-cpu
           path: src/Bob-linux.zip
           retention-days: 90
 
@@ -92,8 +88,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -101,21 +95,21 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
-      - name: Install Python dependencies
+      - name: Install Python dependencies (CPU-only)
         working-directory: ./src
         run: |
           python -m pip install --upgrade pip
-          pip install flet==${{ env.FLET_VERSION }}
+          pip install flet==${{ env.FLET_VERSION }} flet-cli==${{ env.FLET_VERSION }} flet-desktop==${{ env.FLET_VERSION }}
           
-          if [ "${{ env.INSTALL_MODE }}" = "development" ]; then
-            pip install -e '.[dev]'
-            echo "Installed in development mode with all dev dependencies"
-          else
-            # Skip problematic packages on macOS
-            pip install -r <(grep -v "xformers" requirements.txt) --no-cache-dir
-          fi
+          # Install CPU-only PyTorch
+          pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cpu
           
-          python -c "import transformers; print('Transformers:', transformers.__version__)"
+          # Filter out GPU packages
+          grep -Ev "xformers|nvidia-cuda-nvcc|bitsandbytes|cuda|nvidia" requirements.txt > cpu_requirements.txt
+          pip install -r cpu_requirements.txt --no-cache-dir
+          rm cpu_requirements.txt
+          
+          python -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.cuda.is_available()}')"
           pip cache purge
 
       - name: Build macOS Application
@@ -127,12 +121,13 @@ jobs:
             --description "Bob The Lawyer Application" \
             --build-number $BUILD_NUMBER \
             --build-version $BUILD_VERSION \
+            --source-packages tqdm transformers torch \
             --verbose
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-macos-${{ env.INSTALL_MODE }}
+          name: ${{ env.APP_NAME }}-macos-cpu
           path: src/build/macos
           retention-days: 90
 
@@ -141,8 +136,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -150,22 +143,22 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
-      - name: Install Python dependencies
+      - name: Install Python dependencies (CPU-only)
         working-directory: ./src
         run: |
           python -m pip install --upgrade pip
-          pip install flet==${{ env.FLET_VERSION }}
+          pip install flet==${{ env.FLET_VERSION }} flet-cli==${{ env.FLET_VERSION }} flet-desktop==${{ env.FLET_VERSION }}
           
-          if ("${{ env.INSTALL_MODE }}" -eq "development") {
-            pip install -e '.[dev]'
-            Write-Host "Installed in development mode with all dev dependencies"
-          } else {
-            pip install tqdm>=4.27 packaging>=23.0
-            pip install torch --index-url https://download.pytorch.org/whl/cpu
-            pip install -r requirements.txt --no-cache-dir
-          }
+          # Install CPU-only PyTorch
+          pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cpu
           
-          python -c "import torch; print(f'PyTorch: {torch.__version__}')"
+          # Filter out GPU packages in Windows
+          Select-String -Path requirements.txt -NotMatch "xformers|nvidia-cuda-nvcc|bitsandbytes|cuda|nvidia" | 
+            Out-File -FilePath cpu_requirements.txt -Encoding utf8
+          pip install -r cpu_requirements.txt --no-cache-dir
+          Remove-Item cpu_requirements.txt
+          
+          python -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.cuda.is_available()}')"
 
       - name: Build Windows Application
         working-directory: ./src
@@ -176,12 +169,12 @@ jobs:
             --description "Bob The Lawyer Application" `
             --build-number $env:BUILD_NUMBER `
             --build-version $env:BUILD_VERSION `
-            --source-packages tqdm transformers torch `
+            --source-packages tqdm transformers torch accelerate tokenizers safetensors huggingface-hub `
             --verbose
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-windows-${{ env.INSTALL_MODE }}
+          name: ${{ env.APP_NAME }}-windows-cpu
           path: src/build/windows
           retention-days: 90
