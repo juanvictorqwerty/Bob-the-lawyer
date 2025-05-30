@@ -9,7 +9,7 @@ on:
 
 env:
   APP_NAME: "Bob"
-  BUILD_NUMBER: 1
+  BUILD_NUMBER: ${{ github.run_number }}
   BUILD_VERSION: "1.0.0"
   PYTHON_VERSION: "3.10.11"
   FLET_VERSION: "0.27.6"
@@ -50,7 +50,7 @@ jobs:
         run: |
           rm -rf build/
           flet build linux \
-            --project "$env:APP_NAME"  \
+            --project "${APP_NAME}"  \
             --build-number $BUILD_NUMBER \
             --build-version $BUILD_VERSION \
             --verbose
@@ -60,7 +60,7 @@ jobs:
         run: |
           find build/linux -name "*.pyc" -delete
           find build/linux -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-          cd build && zip -r ../Bob-linux.zip linux/
+          cd build && zip -qr ../${{ env.APP_NAME }}-linux.zip linux/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -94,16 +94,25 @@ jobs:
         run: |
           rm -rf build/
           flet build macos \
-            --project "$env:APP_NAME"  \
+            --project "${APP_NAME}"  \
             --build-number $BUILD_NUMBER \
             --build-version $BUILD_VERSION \
             --verbose
+
+      - name: Prepare macOS artifact
+        working-directory: ./src
+        run: |
+          # Optional: Clean .pyc files if Flet doesn't handle it fully for bundled apps
+          # find "build/macos/${{ env.APP_NAME }}.app" -name "*.pyc" -delete
+          # find "build/macos/${{ env.APP_NAME }}.app" -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          cd build && zip -qr ../${{ env.APP_NAME }}-macos.zip macos/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-macos
-          path: src/build/macos
+          # Upload the zipped artifact
+          path: src/${{ env.APP_NAME }}-macos.zip
           retention-days: 90
 
   build-windows:
@@ -124,6 +133,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install flet==${{ env.FLET_VERSION }} flet-cli==${{ env.FLET_VERSION }} flet-desktop==${{ env.FLET_VERSION }}
           pip install -r requirements.txt
+          pip cache purge
 
       - name: Build Windows Application
         working-directory: ./src
@@ -135,9 +145,20 @@ jobs:
             --build-version $env:BUILD_VERSION `
             --verbose
 
+      - name: Prepare Windows artifact
+        working-directory: ./src
+        shell: pwsh
+        run: |
+          # Optional: Clean .pyc files if Flet doesn't handle it fully
+          # Get-ChildItem -Path "build/windows" -Recurse -Filter "*.pyc" | Remove-Item -Force -ErrorAction SilentlyContinue
+          # Get-ChildItem -Path "build/windows" -Recurse -Filter "__pycache__" -Directory | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+          Push-Location build
+          Compress-Archive -Path windows -DestinationPath ../${{ env.APP_NAME }}-windows.zip -Force
+          Pop-Location
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-windows
-          path: src/build/windows
+          path: src/${{ env.APP_NAME }}-windows.zip
           retention-days: 90
