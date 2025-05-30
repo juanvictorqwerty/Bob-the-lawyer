@@ -50,7 +50,7 @@ jobs:
         run: |
           rm -rf build/
           flet build linux \
-            --base-name "$APP_NAME" \
+            --project "$env:APP_NAME"  \
             --build-number $BUILD_NUMBER \
             --build-version $BUILD_VERSION \
             --verbose
@@ -94,7 +94,7 @@ jobs:
         run: |
           rm -rf build/
           flet build macos \
-            --base-name "$APP_NAME" \
+            --project "$env:APP_NAME"  \
             --build-number $BUILD_NUMBER \
             --build-version $BUILD_VERSION \
             --verbose
@@ -130,7 +130,7 @@ jobs:
         run: |
           Remove-Item -Path build/ -Recurse -Force -ErrorAction SilentlyContinue
           flet build windows `
-            --base-name "$env:APP_NAME" `
+            --project "$env:APP_NAME" `
             --build-number $env:BUILD_NUMBER `
             --build-version $env:BUILD_VERSION `
             --verbose
