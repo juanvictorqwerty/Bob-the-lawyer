@@ -36,25 +36,20 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-      - name: Install Python dependencies (CPU-only, no CUDA)
+      - name: Install Python dependencies
         working-directory: ./src
         run: |
           python -m pip install --upgrade pip
           pip install flet==${{ env.FLET_VERSION }}
-          
-          # Force CPU-only PyTorch installation - let pip decide compatible versions
-          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
-          
-          # Install requirements.txt and let pip resolve versions automatically
-          pip install -r requirements.txt --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu
-          
-          # Verify CPU-only installation
-          python -c "import torch; print(f'PyTorch version: {torch.__version__}, CUDA available: {torch.cuda.is_available()}, CPU only: {not torch.cuda.is_available()}')"
-          
-          # Clean up
+          # Install CPU-only PyTorch
+          pip install torch --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
+          # Install other requirements
+          pip install -r requirements.txt --no-cache-dir
+          # Verify installation
+          python -c "import torch; print(f'PyTorch version: {torch.__version__}, CUDA: {torch.cuda.is_available()}')"
           pip cache purge
 
-      - name: Build application (optimized)
+      - name: Build application
         working-directory: ./src
         run: |
           rm -rf build/
@@ -64,51 +59,23 @@ jobs:
           --build-number $BUILD_NUMBER \
           --build-version $BUILD_VERSION \
           --source-packages tqdm transformers torch accelerate tokenizers safetensors huggingface-hub \
-          --optimize \
-          --no-rich-output \
           --verbose
 
-      - name: Optimize build size
+      - name: Prepare artifact
         working-directory: ./src
         run: |
-          # Remove debugging symbols and unnecessary files
+          # Remove potentially problematic files
           find build/linux -name "*.pyc" -delete
           find build/linux -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
           find build/linux -name ".DS_Store" -delete 2>/dev/null || true
-          find build/linux -name "*.pyo" -delete 2>/dev/null || true
-          find build/linux -name "*.pyd" -delete 2>/dev/null || true
-          
-          # Remove test files and docs
-          find build/linux -path "*/test*" -type d -exec rm -rf {} + 2>/dev/null || true
-          find build/linux -path "*/tests*" -type d -exec rm -rf {} + 2>/dev/null || true
-          find build/linux -name "*test*.py" -delete 2>/dev/null || true
-          find build/linux -name "README*" -delete 2>/dev/null || true
-          find build/linux -name "LICENSE*" -delete 2>/dev/null || true
-          find build/linux -name "CHANGELOG*" -delete 2>/dev/null || true
-          
-          # Remove unused locale files
-          find build/linux -path "*/locale/*" -name "*.mo" -delete 2>/dev/null || true
-          
-          # Remove large unnecessary files from torch
-          find build/linux -path "*torch*" -name "*.so.*" -size +50M -delete 2>/dev/null || true
-          find build/linux -path "*torch*" -name "libtorch_cuda*" -delete 2>/dev/null || true
-          find build/linux -path "*torch*" -name "*cuda*" -delete 2>/dev/null || true
-          
-          # Strip binaries to remove debugging symbols
-          find build/linux -name "*.so" -exec strip --strip-unneeded {} \; 2>/dev/null || true
-          find build/linux -type f -executable -exec strip --strip-unneeded {} \; 2>/dev/null || true
-          
-          # Show size before compression
-          du -sh build/linux
-          
-          # Create compressed archive with maximum compression
-          cd build && tar -czf ../Bob-linux.tar.gz --exclude-backups --exclude-caches linux/
+          # Create our own zip to avoid tar issues
+          cd build && zip -r ../Bob-linux.zip linux/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-linux
-          path: src/Bob-linux.tar.gz
+          path: src/Bob-linux.zip
           if-no-files-found: error
 
   build-macos:
@@ -124,22 +91,16 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
-      - name: Install Python dependencies (CPU-only, no CUDA)
+      - name: Install Python dependencies
         working-directory: ./src
         run: |
           python -m pip install --upgrade pip
           pip install flet==${{ env.FLET_VERSION }}
-          
-          # Force CPU-only PyTorch installation - let pip decide compatible versions
-          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
-          
-          # Install requirements.txt and let pip resolve versions automatically
-          pip install -r requirements.txt --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu
-          
-          # Verify CPU-only installation
-          python -c "import torch; print(f'PyTorch version: {torch.__version__}, CUDA available: {torch.cuda.is_available()}, CPU only: {not torch.cuda.is_available()}')"
-          
-          # Clean up
+          # Install CPU-only PyTorch
+          pip install torch --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
+          # Install other requirements
+          pip install -r requirements.txt --no-cache-dir
+          python -c "import torch; print(f'PyTorch version: {torch.__version__}, CUDA: {torch.cuda.is_available()}')"
           pip cache purge
 
       - name: Build macOS Application
@@ -152,7 +113,6 @@ jobs:
           --build-number $BUILD_NUMBER \
           --build-version $BUILD_VERSION \
           --source-packages tqdm transformers torch accelerate tokenizers safetensors huggingface-hub \
-          --optimize \
           --verbose
 
       - name: Upload artifact
@@ -177,22 +137,16 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
-      - name: Install Python dependencies (CPU-only, no CUDA)
+      - name: Install Python dependencies
         working-directory: ./src
         run: |
           python -m pip install --upgrade pip
           pip install flet==${{ env.FLET_VERSION }}
-          
-          # Force CPU-only PyTorch installation - explicitly avoid CUDA
-          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
-          
-          # Install requirements.txt with CPU-only torch index
-          pip install -r requirements.txt --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu
-          
-          # Verify CPU-only installation
-          python -c "import torch; print('PyTorch version: ' + torch.__version__ + ', CUDA available: ' + str(torch.cuda.is_available()) + ', CPU only: ' + str(not torch.cuda.is_available()))"
-          
-          # Clean up
+          # Install CPU-only PyTorch
+          pip install torch --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
+          # Install other requirements
+          pip install -r requirements.txt --no-cache-dir
+          python -c "import torch; print('PyTorch version: ' + torch.__version__ + ', CUDA: ' + str(torch.cuda.is_available()))"
           pip cache purge
 
       - name: Build Windows Application
@@ -205,7 +159,6 @@ jobs:
           --build-number $env:BUILD_NUMBER `
           --build-version $env:BUILD_VERSION `
           --source-packages tqdm transformers torch accelerate tokenizers safetensors huggingface-hub `
-          --optimize `
           --no-rich-output `
           --verbose
 
