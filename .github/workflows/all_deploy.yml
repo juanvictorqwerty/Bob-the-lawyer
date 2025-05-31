@@ -53,7 +53,6 @@ jobs:
             --project "${APP_NAME}"  \
             --build-number $BUILD_NUMBER \
             --build-version $BUILD_VERSION \
-            --source-packages tqdm,transformers,torch,accelerate,tokenizers,safetensors,huggingface-hub \
             --verbose
 
       - name: Prepare artifact
@@ -98,7 +97,6 @@ jobs:
             --project "${APP_NAME}"  \
             --build-number $BUILD_NUMBER \
             --build-version $BUILD_VERSION \
-            --source-packages tqdm,transformers,torch,accelerate,tokenizers,safetensors,huggingface-hub \
             --verbose
 
       - name: Prepare macOS artifact
@@ -145,7 +143,6 @@ jobs:
             --project "$env:APP_NAME" `
             --build-number $env:BUILD_NUMBER `
             --build-version $env:BUILD_VERSION `
-            --source-packages tqdm,transformers,torch,accelerate,tokenizers,safetensors,huggingface-hub `
             --verbose
 
       - name: Prepare Windows artifact
