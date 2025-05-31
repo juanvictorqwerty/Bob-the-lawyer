@@ -1,96 +1,58 @@
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, StoppingCriteriaList, StoppingCriteria
-import torch
-from pathlib import Path
+import requests
+import json
+import os
+import logging
 
-# System prompt
-SYSTEM_PROMPT = "Respond conversationally and concisely. Do not make any conversation examples"
+# Configure basic logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Define model path using pathlib
-# Cross-platform model paths (checks local directory first, then standard locations)
-MODEL_PATHS = [
-    Path("Bob-the-lawyer-model/tinyllama_model"),  # Local directory
-    Path.home() / "Bob-the-lawyer-model/tinyllama_model",  # User home directory
-    Path.home() / "Documents/Bob-the-lawyer-model/tinyllama_model",  # Windows/Mac Documents
-    Path.home() / ".local/share/Bob-the-lawyer-model/tinyllama_model",  # Linux standard data location
-]
-
-# Try loading model from first existing path
-for model_path in MODEL_PATHS:
-    if model_path.exists():
-        try:
-            tokenizer = AutoTokenizer.from_pretrained(str(model_path), local_files_only=True)
-            model = AutoModelForCausalLM.from_pretrained(str(model_path), local_files_only=True)
-            print(f"Model loaded successfully from: {model_path}")
-            break
-        except Exception as e:
-            print(f"Error loading model from {model_path}: {str(e)}")
-            continue
-else:
-    raise FileNotFoundError(
-        "Model not found in any of these locations:\n" + 
-        "\n".join(f"- {p}" for p in MODEL_PATHS) +
-        "\nPlease ensure the model files are in one of these paths."
-    )
-# Check and set device
-device = 0 if torch.cuda.is_available() else -1
-print(f"Using {'CUDA' if device == 0 else 'CPU'} for inference")
-
-# Initialize the pipeline
-chat_pipeline = pipeline(
-    "text-generation",
-    model=model,
-    tokenizer=tokenizer,
-    device=device,
-)
-
-# Define stopping criteria
-class StopOnTokens(StoppingCriteria):
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
-        stop_tokens = [
-            tokenizer.convert_tokens_to_ids("."),
-            tokenizer.convert_tokens_to_ids("?"),
-            tokenizer.convert_tokens_to_ids("!"),
-            tokenizer.convert_tokens_to_ids("\n"),
-            tokenizer.eos_token_id,
-        ]
-        return input_ids[0][-1].item() in stop_tokens  
+# Get the API endpoint from an environment variable or use a default
+MODEL_API_URL = os.environ.get("MODEL_API_URL", "http://127.0.0.1:8000/generate")
 
 # Chat generation function
 def generate_reply(user_input: str,
                     max_new_tokens: int = 100,
                     temperature: float = 0.7,
                     top_p: float = 0.9) -> str:
-    """
-    Generates a chat-style reply using the pre-built text-generation pipeline.
+    """Sends a request to the external FastAPI model server for text generation.
 
     Args:
         user_input (str): The user's message.
         max_new_tokens (int): Max tokens to generate.
         temperature (float): Sampling temperature.
         top_p (float): Nucleus sampling probability.
-
     Returns:
         str: The assistant's reply.
     """
-    # Construct the prompt
-    prompt = (
-        f"<|system|> {SYSTEM_PROMPT}\n"
-        f"<|user|> {user_input}\n"
-        f"<|assistant|>"
-    )
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "user_input": user_input,
+        "max_new_tokens": max_new_tokens,
+        "temperature": temperature,
+        "top_p": top_p,
+    }
 
-    # Generate response
-    outputs = chat_pipeline(
-        prompt,
-        max_new_tokens=max_new_tokens,
-        do_sample=True,
-        temperature=temperature,
-        top_p=top_p,
-        pad_token_id=tokenizer.eos_token_id,
-        eos_token_id=tokenizer.eos_token_id,
-        stopping_criteria=StoppingCriteriaList([StopOnTokens()]),
-        repetition_penalty=1.2,
-    )
+    try:
+        logger.info(f"Sending request to {MODEL_API_URL} with input: {user_input[:50]}...")
+        response = requests.post(MODEL_API_URL, headers=headers, data=json.dumps(payload), timeout=60) # 60-second timeout
+        response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
+        
+        result = response.json()
+        logger.info(f"Received response: {str(result)[:100]}...")
 
-    # Extract and return the assistant's response
-    return outputs[0]['generated_text'].split("<|assistant|>")[-1].strip()
+        if "reply" in result:
+            return result["reply"].strip()
+        else:
+            logger.warning(f"Unexpected response format from API: {result}")
+            return "⚠️ Error: Could not parse the model's response from API."
+
+    except requests.exceptions.Timeout:
+        logger.error(f"Request to {MODEL_API_URL} timed out.")
+        return "⚠️ Error: The request to the model API timed out."
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error calling model API at {MODEL_API_URL}: {e}")
+        return f"⚠️ Error: Could not reach the model service ({e})."
+    except json.JSONDecodeError:
+        logger.error(f"Failed to decode JSON response from {MODEL_API_URL}")
+        return "⚠️ Error: Invalid response format from the model API."

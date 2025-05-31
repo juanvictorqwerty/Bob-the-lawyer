@@ -473,31 +473,16 @@ class LawyerChatBotApp:
         self.user_input.focus()
 
     def web_search_click(self, e):
-        """Handle web search button click - returns only 1 result"""
-        # Initialize search history if it doesn't exist
-        if not hasattr(self, 'search_history'):
-            self.search_history = []
-        
+        """Handle web search button click"""
         query = self.user_input.value.strip()
-        
-        # Error Handling: Empty Query
         if not query:
-            self.store_message("system", "Empty search query")
-            self.chat.controls.append(
-                self.create_bot_message("⚠️ Please enter a search term")
-            )
-            self.page.update()
             return
-        
-        # Store in History
-        self.search_history.append(query)
-        if len(self.search_history) > 10:  # Keep only last 10 searches
-            self.search_history.pop(0)
-        
-        # Display UI State
+
+        # Store and display query
         self.store_message("user", f"WEB SEARCH: {query}")
         self.chat.controls.append(self.create_user_message(f"🔍 Searching: {query}"))
         
+        # Show loading indicator
         thinking = ft.Container(
             ft.Row([
                 ft.ProgressRing(width=20, height=20, stroke_width=2),
@@ -506,55 +491,31 @@ class LawyerChatBotApp:
             alignment=ft.alignment.center_left,
         )
         self.chat.controls.append(thinking)
-        
-        # Disable all buttons during search
-        for btn in [self.user_input, self.send_button, 
-                    self.upload_button, self.search_button]:
-            btn.disabled = True
+        self.user_input.disabled = True
+        self.send_button.disabled = True
+        self.upload_button.disabled = True
+        self.search_button.disabled = True
         self.page.update()
 
         try:
-            # Perform Search - now only requesting 1 result
+            # Perform search with direct API key
             api_key = "c993fe8beec5d447b42da49cec429aab6460e9170118ba6eb56473f574705105"
             params = {
                 "q": query,
                 "engine": "google",
                 "api_key": api_key,
-                "num": 1  # Changed from 3 to 1
+                "num": 3
             }
             
-            # Enhanced Error Handling
-            try:
-                response = requests.get(
-                    "https://serpapi.com/search", 
-                    params=params, 
-                    timeout=10
-                )
-                response.raise_for_status()
-                results = response.json()
-                
-            except requests.exceptions.Timeout:
-                raise Exception("Search timed out (10s)")
-            except requests.exceptions.ConnectionError:
-                raise Exception("No internet connection")
-            except requests.exceptions.HTTPError as http_err:
-                if response.status_code == 429:
-                    raise Exception("Too many requests! Try again later")
-                elif response.status_code == 403:
-                    raise Exception("Invalid API key")
-                else:
-                    raise Exception(f"HTTP error: {http_err}")
+            response = requests.get("https://serpapi.com/search", params=params, timeout=10)
+            response.raise_for_status()
+            results = response.json()
             
-            # Process Results - now only showing 1 result
-            if "organic_results" in results and len(results["organic_results"]) > 0:
-                res = results["organic_results"][0]  # Get only the first result
-                result = (
-                    "🌐 Top Result:\n"
-                    f"1. {res.get('title', 'No title')}\n"
-                    f"   {res.get('snippet', 'No description')}\n"
-                    f"   {res.get('link', 'No URL')}\n"
-                    f"\n📚 Search history: {len(self.search_history)} queries stored"
-                )
+            if "organic_results" in results:
+                output = ["🌐 Web Results:"]
+                for idx, res in enumerate(results["organic_results"][:3], 1):
+                    output.append(f"{idx}. {res.get('title', 'No title')}\n   {res.get('snippet', 'No description')}\n   {res.get('link', 'No URL')}\n")
+                result = "\n".join(output)
             else:
                 result = "🔍 No results found"
             
@@ -568,12 +529,18 @@ class LawyerChatBotApp:
             self.chat.controls.remove(thinking)
             self.chat.controls.append(self.create_bot_message(error_msg))
             
-        # Reset UI
         self.user_input.value = ""
-        for btn in [self.user_input, self.send_button, 
-                    self.upload_button, self.search_button]:
-            btn.disabled = False
-        self.page.update()                                          
+        self.user_input.disabled = False
+        self.send_button.disabled = False
+        self.upload_button.disabled = False
+        self.search_button.disabled = False
+        self.page.update()
+
+    def __del__(self):
+        """Close database connection when the app is closed"""
+        if hasattr(self, 'conn'):
+            self.conn.close()
+
 
 def main(page: ft.Page):
     LawyerChatBotApp(page)
