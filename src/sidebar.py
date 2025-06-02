@@ -4,7 +4,7 @@ import sqlite3
 class ModernNavBar(ft.Container):
     def __init__(self, main_app):
         self.main_app = main_app  # Reference to the main app
-        self.current_selected = "messages"  # Track currently selected discussion
+        self.current_selected = None  # Track currently selected discussion
         # Track the highest discussion number
         self.highest_discussion_num = 0
         # Connect to the database and get table names
@@ -57,25 +57,69 @@ class ModernNavBar(ft.Container):
             on_click=self.create_new_discussion
         )
 
+    def create_new_discussion(self, e):
+        """Create a new discussion table in the database"""
+        try:
+            # Increment the discussion number
+            self.highest_discussion_num += 1
+            table_name = f"discussion_{self.highest_discussion_num}"
+            
+            conn = sqlite3.connect('database.db')
+            cursor = conn.cursor()
+            
+            # Create a new table with some basic structure
+            cursor.execute(f"""
+                CREATE TABLE {table_name} (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    message TEXT,
+                    sender TEXT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            conn.close()
+            
+            # Switch to the new discussion
+            self.main_app.switch_discussion(table_name)
+            
+            # Refresh the sidebar to show the new table
+            self.refresh_sidebar(e.page, table_name)
+            
+            
+        except Exception as e:
+            e.page.show_snack_bar(
+                ft.SnackBar(
+                    ft.Text(f"Error creating discussion: {str(e)}"), 
+                    open=True
+                )
+            )
+
     def get_database_tables(self):
-        """Fetch all table names from the SQLite database"""
+        """Fetch all table names from the SQLite database, sorted in descending order."""
         try:
             conn = sqlite3.connect('database.db')
             cursor = conn.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-            tables = cursor.fetchall()
+            tables_data = cursor.fetchall()
             conn.close()
-            return [table[0] for table in tables]
+            
+            # Filter for tables starting with "discussion_"
+            table_names = [
+                table[0] for table in tables_data if table[0].startswith("discussion_")
+            ]
+            # Sort the table names in descending (reverse alphabetical) order
+            table_names.sort(reverse=True)
+            return table_names
         except Exception as e:
             print(f"Error accessing database: {e}")
-            return ["No tables found"]
+            return [] # Return an empty list on error
 
     def create_table_list_items(self, table_names):
         """Create list items for each table name"""
         items = []
         for table in table_names:
             # Only show delete button for discussions, not for "messages" table
-            show_delete = table.startswith("discussion_") and table != "messages"
+            show_delete = table.startswith("discussion_") 
             
             items.append(
                 ft.Container(
@@ -133,8 +177,8 @@ class ModernNavBar(ft.Container):
             
             # If we're currently viewing this discussion, switch to default
             if self.current_selected == table_name:
-                self.main_app.switch_discussion("messages")
-                self.current_selected = "messages"
+                # self.main_app.switch_discussion("messages")  # Remove this line
+                self.current_selected = None
             
             # Refresh sidebar
             self.refresh_sidebar(e.page)
@@ -149,48 +193,6 @@ class ModernNavBar(ft.Container):
             e.page.show_snack_bar(
                 ft.SnackBar(
                     ft.Text(f"Error deleting discussion: {str(ex)}"), 
-                    open=True
-                )
-            )
-
-    def create_new_discussion(self, e):
-        """Create a new discussion table in the database"""
-        try:
-            # Increment the discussion number
-            self.highest_discussion_num += 1
-            table_name = f"discussion_{self.highest_discussion_num}"
-            
-            conn = sqlite3.connect('database.db')
-            cursor = conn.cursor()
-            
-            # Create a new table with some basic structure
-            cursor.execute(f"""
-                CREATE TABLE {table_name} (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    message TEXT,
-                    sender TEXT,
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            conn.commit()
-            conn.close()
-            
-            # Switch to the new discussion
-            self.main_app.switch_discussion(table_name)
-            
-            # Refresh the sidebar to show the new table
-            self.refresh_sidebar(e.page, table_name)
-            
-            e.page.show_snack_bar(
-                ft.SnackBar(
-                    ft.Text(f"Created new discussion: {table_name}"), 
-                    open=True
-                )
-            )
-        except Exception as e:
-            e.page.show_snack_bar(
-                ft.SnackBar(
-                    ft.Text(f"Error creating discussion: {str(e)}"), 
                     open=True
                 )
             )
