@@ -8,11 +8,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Get the API endpoint from an environment variable or use a default
-MODEL_API_URL = os.environ.get("MODEL_API_URL", "http://127.0.0.1:8000/generate")
+MODEL_API_URL = os.environ.get("MODEL_API_URL", "https://juanvic-Bob.hf.space/")
 
 # Chat generation function
 def generate_reply(user_input: str,
-                    max_new_tokens: int = 100,
+                    max_new_tokens: int = 80,
                     temperature: float = 0.7,
                     top_p: float = 0.9) -> str:
     """Sends a request to the external FastAPI model server for text generation.
@@ -35,7 +35,7 @@ def generate_reply(user_input: str,
 
     try:
         logger.info(f"Sending request to {MODEL_API_URL} with input: {user_input[:50]}...")
-        response = requests.post(MODEL_API_URL, headers=headers, data=json.dumps(payload), timeout=60) # 60-second timeout
+        response = requests.post(MODEL_API_URL, headers=headers, data=json.dumps(payload), timeout=210) #limit timeout issues
         response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
         
         result = response.json()

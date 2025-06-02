@@ -83,7 +83,8 @@ class GenerationRequest(BaseModel):
 class GenerationResponse(BaseModel):
     reply: str
 
-@app.post("/generate", response_model=GenerationResponse)
+
+@app.post("/", response_model=GenerationResponse)
 async def generate_chat_reply(request: GenerationRequest):
     if chat_pipeline_global is None or tokenizer_global is None:
         logger.error("Pipeline or tokenizer not initialized.")
@@ -117,4 +118,4 @@ if __name__ == "__main__":
     import uvicorn
     # It's recommended to run Uvicorn from the command line for more options:
     # uvicorn api_server:app --reload --host 0.0.0.0 --port 8000
-    uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT", 7860))

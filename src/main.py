@@ -18,7 +18,7 @@ class LawyerChatBotApp:
         self.page = page
         self.page.theme_mode = ft.ThemeMode.LIGHT  # Default to light theme
         self.chat = ft.ListView(expand=True, spacing=10, auto_scroll=True)
-        self.current_discussion = "messages"  # Default table name
+        self.current_discussion = None  # Default table name
         
         # Theme toggle button
         self.theme_toggle = ft.IconButton(
@@ -61,30 +61,44 @@ class LawyerChatBotApp:
         
         # Initialize database and load previous messages
         self.initialize_database()
-        self.load_previous_messages()
         self.init_ui()
         self.update_theme_colors()  # Set initial theme colors
+        self.switch_discussion(self.current_discussion) # Set initial state for inputs
 
     def initialize_database(self):
-        """Create database and table if they don't exist"""
+        """Connect to the database and set up the cursor."""
         self.conn = sqlite3.connect('database.db')
         self.cursor = self.conn.cursor()
-        self.cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS {self.current_discussion} (
+        # No table creation here; tables are created on demand.
+
+    def _create_table_if_not_exists(self, table_name):
+        """
+        Creates a specific table if it doesn't already exist.
+        This uses the standard schema for discussion tables.
+        """
+        if not table_name: # Avoid issues with empty table names
+            print("Error: Attempted to create a table with no name.")
+            return
+        try:
+            self.cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS "{table_name}" (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 sender TEXT NOT NULL,
                 message TEXT NOT NULL,
                 timestamp DATETIME NOT NULL
             )
         ''')
-        self.conn.commit()
+            
+        except sqlite3.Error as e:
+            print(f"Error creating table {table_name}: {e}")
 
-    def load_previous_messages(self):
-        """Load previous messages from database when app starts"""
+    
+    def load_previous_messages(self, table_to_load: str):
+        """Load previous messages from the specified discussion table."""
         self.clear_chat()
         
         try:
-            self.cursor.execute(f'SELECT sender, message FROM {self.current_discussion} ORDER BY timestamp')
+            self.cursor.execute(f'SELECT sender, message FROM "{table_to_load}" ORDER BY timestamp')
             messages = self.cursor.fetchall()
             
             for sender, message in messages:
@@ -94,9 +108,9 @@ class LawyerChatBotApp:
                     self.chat.controls.append(self.create_bot_message(message))
             self.page.update()
         except sqlite3.OperationalError as e:
-            print(f"Error loading messages: {str(e)}")
+            print(f"Error loading messages from table '{table_to_load}': {str(e)}")
             self.chat.controls.append(
-                self.create_bot_message(f"⚠️ Error loading discussion: {str(e)}")
+                self.create_bot_message(f"⚠️ Error loading discussion '{table_to_load}': {str(e)}")
             )
             self.page.update()
 
@@ -107,9 +121,35 @@ class LawyerChatBotApp:
         self.page.update()
 
     def switch_discussion(self, table_name):
-        """Switch to a different discussion table"""
-        self.current_discussion = table_name
-        self.load_previous_messages()
+        """Switch to a different discussion table or handle no active discussion."""
+        self.current_discussion = table_name  # Can be None
+
+        if table_name is None:
+            self.clear_chat()
+            # Add a placeholder message to the chat
+            self.chat.controls.append(
+                ft.Container(
+                    content=ft.Text(
+                        "Select or create a discussion from the sidebar to begin.",
+                        italic=True,
+                        opacity=0.6,
+                        text_align=ft.TextAlign.CENTER
+                    ),
+                    alignment=ft.alignment.center,
+                    padding=20
+                )
+            )
+            self.user_input.disabled = True
+            self.send_button.disabled = True
+            self.upload_button.disabled = True
+            self.search_button.disabled = True
+        else:
+            self.load_previous_messages(table_name)  # This calls clear_chat() internally
+            self.user_input.disabled = False
+            self.send_button.disabled = False
+            self.upload_button.disabled = False
+            self.search_button.disabled = False
+        self.page.update()
 
     def create_user_message(self, message):
         is_dark = self.page.theme_mode == ft.ThemeMode.DARK
@@ -250,13 +290,13 @@ class LawyerChatBotApp:
                 VALUES (?, ?, ?)
             ''', (sender, message, timestamp))
             self.conn.commit()
-        except sqlite3.OperationalError as e:
-            print(f"Error storing message: {str(e)}")
+        except sqlite3.OperationalError as e: # Typically "no such table"
+            print(f"Error storing message (table '{self.current_discussion}' might not exist): {str(e)}")
             # Try to create the table if it doesn't exist
-            self.initialize_database()
+            self._create_table_if_not_exists(self.current_discussion)
             # Retry storing the message
             self.cursor.execute(f'''
-                INSERT INTO {self.current_discussion} (sender, message, timestamp)
+                INSERT INTO "{self.current_discussion}" (sender, message, timestamp)
                 VALUES (?, ?, ?)
             ''', (sender, message, timestamp))
             self.conn.commit()
@@ -275,24 +315,6 @@ class LawyerChatBotApp:
         )
         self.update_theme_colors()
         self.page.update()
-
-    def update_theme_colors(self):
-        """Update all color references based on current theme"""
-        is_dark = self.page.theme_mode == ft.ThemeMode.DARK
-        
-        # Update page colors
-        self.page.bgcolor = ft.colors.GREY_900 if is_dark else ft.colors.GREY_50
-        
-        # Update input field
-        self.user_input.color = ft.colors.WHITE if is_dark else ft.colors.BLACK
-        self.user_input.bgcolor = ft.colors.with_opacity(0.1, ft.colors.GREY_500 if is_dark else ft.colors.GREY_200)
-        self.user_input.border_color = ft.colors.GREY_600 if is_dark else ft.colors.GREY_300
-        
-        # Update buttons
-        self.send_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLACK
-        self.upload_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLACK
-        self.theme_toggle.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLACK
-        self.search_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLACK
 
     def init_ui(self):
         self.page.title = "Bob the lawyer"
@@ -420,6 +442,12 @@ class LawyerChatBotApp:
         question = self.user_input.value.strip()
         if not question and not self.current_files:
             return
+        
+        if not self.current_discussion:
+            self.page.show_snack_bar(
+                ft.SnackBar(content=ft.Text("Please select or create a discussion first."), open=True)
+            )
+            return
 
         # If there are files, include them in the context
         context = ""
@@ -476,6 +504,12 @@ class LawyerChatBotApp:
         """Handle web search button click"""
         query = self.user_input.value.strip()
         if not query:
+            return
+
+        if not self.current_discussion:
+            self.page.show_snack_bar(
+                ft.SnackBar(content=ft.Text("Please select or create a discussion first."), open=True)
+            )
             return
 
         # Store and display query
@@ -536,6 +570,24 @@ class LawyerChatBotApp:
         self.search_button.disabled = False
         self.page.update()
 
+    def update_theme_colors(self):
+        """Update all color references based on current theme"""
+        is_dark = self.page.theme_mode == ft.ThemeMode.DARK
+        
+        # Update page colors
+        self.page.bgcolor = ft.colors.GREY_900 if is_dark else ft.colors.GREY_50
+        
+        # Update input field
+        self.user_input.color = ft.colors.WHITE if is_dark else ft.colors.BLACK
+        self.user_input.bgcolor = ft.colors.with_opacity(0.1, ft.colors.GREY_500 if is_dark else ft.colors.GREY_200)
+        self.user_input.border_color = ft.colors.GREY_600 if is_dark else ft.colors.GREY_300
+        
+        # Update buttons
+        self.send_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLUE_700
+        self.upload_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLUE_700
+        self.theme_toggle.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLUE_700
+        self.search_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLUE_700   
+
     def __del__(self):
         """Close database connection when the app is closed"""
         if hasattr(self, 'conn'):
@@ -546,5 +598,3 @@ def main(page: ft.Page):
     LawyerChatBotApp(page)
 
 ft.app(target=main)
-
-
