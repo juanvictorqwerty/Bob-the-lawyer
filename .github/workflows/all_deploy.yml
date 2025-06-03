@@ -58,8 +58,10 @@ jobs:
       - name: Prepare artifact
         working-directory: ./src
         run: |
-          find build/linux -name "*.pyc" -delete
-          find build/linux -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          # Temporarily disable .pyc and __pycache__ cleanup to check if it affects the encodings issue.
+          # If encodings are still missing, the problem likely lies in the 'flet build' step itself.
+          # find build/linux -name "*.pyc" -delete
+          # find build/linux -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
           cd build && zip -qr ../${{ env.APP_NAME }}-linux.zip linux/
 
       - name: Upload artifact
