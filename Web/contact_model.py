@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # --- Model Configuration ---
-SYSTEM_PROMPT = "Respond conversationally and concisely. Do not make any conversation examples"
+SYSTEM_PROMPT = "Respond conversationally and concisely. Do not make any conversation examples.Do not put dates"
 BASE_MODEL_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 ADAPTER_ID = "juanvic/tinyllama-cameroon-law-lora"
 
