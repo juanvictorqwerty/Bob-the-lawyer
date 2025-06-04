@@ -22,7 +22,7 @@ class LawyerChatBotApp:
         
         # Theme toggle button
         self.theme_toggle = ft.IconButton(
-            icon=ft.icons.DARK_MODE,
+            icon=ft.Icons.DARK_MODE,
             on_click=self.toggle_theme,
             tooltip="Toggle dark/light mode",
         )
@@ -43,17 +43,17 @@ class LawyerChatBotApp:
             max_lines=5,
         )
         self.send_button = ft.IconButton(
-            icon=ft.icons.SEND,
+            icon=ft.Icons.SEND,
             on_click=self.send_click,
             tooltip="Send question",
         )
         self.upload_button = ft.IconButton(
-            icon=ft.icons.UPLOAD_FILE,
+            icon=ft.Icons.UPLOAD_FILE,
             on_click=self.upload_files,
             tooltip="Upload documents",
         )
         self.search_button = ft.IconButton(
-            icon=ft.icons.SEARCH,
+            icon=ft.Icons.SEARCH,
             on_click=self.web_search_click,
             tooltip="Search the web",
         )
@@ -161,10 +161,10 @@ class LawyerChatBotApp:
                         value=message,
                         selectable=True,
                         size=15,
-                        color=ft.colors.WHITE if is_dark else ft.colors.BLACK,
+                        color=ft.Colors.WHITE if is_dark else ft.Colors.BLACK,
                     ),
                     alignment=ft.alignment.center_right,
-                    bgcolor=ft.colors.BLUE_800 if is_dark else ft.colors.BLUE_100,
+                    bgcolor=ft.Colors.BLUE_800 if is_dark else ft.Colors.BLUE_100,
                     padding=ft.padding.symmetric(horizontal=14, vertical=10),
                     border_radius=ft.border_radius.only(
                         top_left=16,
@@ -176,7 +176,7 @@ class LawyerChatBotApp:
                     shadow=ft.BoxShadow(
                         spread_radius=0.5,
                         blur_radius=3,
-                        color=ft.colors.with_opacity(0.1, ft.colors.BLACK),
+                        color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK),
                         offset=ft.Offset(0, 1.5),
                     ),
                 )
@@ -198,14 +198,14 @@ class LawyerChatBotApp:
                                 "BOB:",
                                 size=15,
                                 weight=ft.FontWeight.BOLD,
-                                color=ft.colors.BLUE_200 if is_dark else ft.colors.BLUE_800,
+                                color=ft.Colors.BLUE_200 if is_dark else ft.Colors.BLUE_800,
                             ),
                             ft.Container(
                                 content=ft.Text(
                                     message,
                                     selectable=True,
                                     size=15,
-                                    color=ft.colors.WHITE if is_dark else ft.colors.BLACK,
+                                    color=ft.Colors.WHITE if is_dark else ft.Colors.BLACK,
                                 ),
                             )
                         ],
@@ -214,7 +214,7 @@ class LawyerChatBotApp:
                         scroll=ft.ScrollMode.AUTO,
                     ),
                     alignment=ft.alignment.center_left,
-                    bgcolor=ft.colors.GREEN_800 if is_dark else ft.colors.GREEN_100,
+                    bgcolor=ft.Colors.GREEN_800 if is_dark else ft.Colors.GREEN_100,
                     padding=ft.padding.symmetric(horizontal=14, vertical=10),
                     border_radius=ft.border_radius.only(
                         top_left=16,
@@ -226,7 +226,7 @@ class LawyerChatBotApp:
                     shadow=ft.BoxShadow(
                         spread_radius=0.5,
                         blur_radius=3,
-                        color=ft.colors.with_opacity(0.1, ft.colors.BLACK),
+                        color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK),
                         offset=ft.Offset(0, 1.5),
                     ),
                     width=text_width,  # Use the calculated width
@@ -248,20 +248,20 @@ class LawyerChatBotApp:
                                 f"📄 {file_name}",
                                 size=15,
                                 weight=ft.FontWeight.BOLD,
-                                color=ft.colors.WHITE if is_dark else ft.colors.BLUE_800,
+                                color=ft.Colors.WHITE if is_dark else ft.Colors.BLUE_800,
                             ),
                             ft.Text(
                                 content_preview,
                                 selectable=True,
                                 size=12,
-                                color=ft.colors.WHITE if is_dark else ft.colors.BLACK,
+                                color=ft.Colors.WHITE if is_dark else ft.Colors.BLACK,
                             )
                         ],
                         spacing=4,
                         tight=True,
                     ),
                     alignment=ft.alignment.center_right,
-                    bgcolor=ft.colors.BLUE_800 if is_dark else ft.colors.BLUE_100,
+                    bgcolor=ft.Colors.BLUE_800 if is_dark else ft.Colors.BLUE_100,
                     padding=ft.padding.symmetric(horizontal=14, vertical=10),
                     border_radius=ft.border_radius.only(
                         top_left=16,
@@ -273,7 +273,7 @@ class LawyerChatBotApp:
                     shadow=ft.BoxShadow(
                         spread_radius=0.5,
                         blur_radius=3,
-                        color=ft.colors.with_opacity(0.1, ft.colors.BLACK),
+                        color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK),
                         offset=ft.Offset(0, 1.5),
                     ),
                 )
@@ -308,10 +308,10 @@ class LawyerChatBotApp:
             if self.page.theme_mode == ft.ThemeMode.LIGHT
             else ft.ThemeMode.LIGHT
         )
-        self.theme_toggle.icon = (
-            ft.icons.LIGHT_MODE
+        self.theme_toggle.Icon = (
+            ft.Icons.LIGHT_MODE
             if self.page.theme_mode == ft.ThemeMode.DARK
-            else ft.icons.DARK_MODE
+            else ft.Icons.DARK_MODE
         )
         self.update_theme_colors()
         self.page.update()
@@ -335,7 +335,7 @@ class LawyerChatBotApp:
             expand=True,
             controls=[
                 header,
-                ft.Divider(color=ft.colors.GREY_600 if self.page.theme_mode == ft.ThemeMode.DARK else ft.colors.GREY_300),
+                ft.Divider(color=ft.Colors.GREY_600 if self.page.theme_mode == ft.ThemeMode.DARK else ft.Colors.GREY_300),
                 self.chat,
                 ft.Row(
                     [
@@ -353,7 +353,7 @@ class LawyerChatBotApp:
         content = ft.Row(
             controls=[
                 self.sidebar,
-                ft.Container(width=1, bgcolor=ft.colors.GREY_600 if self.page.theme_mode == ft.ThemeMode.DARK else ft.colors.GREY_300),
+                ft.Container(width=1, bgcolor=ft.Colors.GREY_600 if self.page.theme_mode == ft.ThemeMode.DARK else ft.Colors.GREY_300),
                 main_column,
             ],
             expand=True,
@@ -575,18 +575,18 @@ class LawyerChatBotApp:
         is_dark = self.page.theme_mode == ft.ThemeMode.DARK
         
         # Update page colors
-        self.page.bgcolor = ft.colors.GREY_900 if is_dark else ft.colors.GREY_50
+        self.page.bgcolor = ft.Colors.GREY_900 if is_dark else ft.Colors.GREY_50
         
         # Update input field
-        self.user_input.color = ft.colors.WHITE if is_dark else ft.colors.BLACK
-        self.user_input.bgcolor = ft.colors.with_opacity(0.1, ft.colors.GREY_500 if is_dark else ft.colors.GREY_200)
-        self.user_input.border_color = ft.colors.GREY_600 if is_dark else ft.colors.GREY_300
+        self.user_input.color = ft.Colors.WHITE if is_dark else ft.Colors.BLACK
+        self.user_input.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.GREY_500 if is_dark else ft.Colors.GREY_200)
+        self.user_input.border_color = ft.Colors.GREY_600 if is_dark else ft.Colors.GREY_300
         
         # Update buttons
-        self.send_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLUE_700
-        self.upload_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLUE_700
-        self.theme_toggle.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLUE_700
-        self.search_button.icon_color = ft.colors.WHITE if is_dark else ft.colors.BLUE_700   
+        self.send_button.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700
+        self.upload_button.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700
+        self.theme_toggle.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700
+        self.search_button.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700   
 
     def __del__(self):
         """Close database connection when the app is closed"""

@@ -48,12 +48,12 @@ class ModernNavBar(ft.Container):
             padding=ft.padding.symmetric(vertical=10, horizontal=15),
             content=ft.Row(
                 controls=[
-                    ft.Icon(name=ft.icons.ADD, size=18),
+                    ft.Icon(name=ft.Icons.ADD, size=18),
                     ft.Text("Create a Discussion", size=14),
                 ],
                 spacing=10
             ),
-            border=ft.border.only(bottom=ft.BorderSide(1, ft.colors.GREY_300)),
+            border=ft.border.only(bottom=ft.BorderSide(1, ft.Colors.GREY_300)),
             on_click=self.create_new_discussion
         )
 
@@ -126,17 +126,17 @@ class ModernNavBar(ft.Container):
                     padding=ft.padding.symmetric(vertical=10, horizontal=15),
                     content=ft.Row(
                         controls=[
-                            ft.Icon(name=ft.icons.TABLE_ROWS, size=18),
+                            ft.Icon(name=ft.Icons.TABLE_ROWS, size=18),
                             ft.Text(
                                 table, 
                                 size=14,
-                                color=ft.colors.WHITE if table == self.current_selected else None
+                                color=ft.Colors.WHITE if table == self.current_selected else None
                             ),
                             # Delete button (only visible on hover and for discussions)
                             ft.IconButton(
-                                icon=ft.icons.DELETE,
+                                icon=ft.Icons.DELETE,
                                 icon_size=18,
-                                icon_color=ft.colors.RED_400,
+                                icon_color=ft.Colors.RED_400,
                                 visible=False,  # Hidden by default
                                 data=table,  # Store table name in button data
                                 on_click=self.delete_discussion,
@@ -145,8 +145,8 @@ class ModernNavBar(ft.Container):
                         spacing=10,
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     ),
-                    border=ft.border.only(bottom=ft.BorderSide(1, ft.colors.GREY_300)),
-                    bgcolor=ft.colors.BLUE_800 if table == self.current_selected else None,
+                    border=ft.border.only(bottom=ft.BorderSide(1, ft.Colors.GREY_300)),
+                    bgcolor=ft.Colors.BLUE_800 if table == self.current_selected else None,
                     on_click=lambda e, table=table: self.on_table_click(e, table),
                     on_hover=lambda e, table=table: self.on_discussion_hover(e, table, show_delete),
                 )
