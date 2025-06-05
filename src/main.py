@@ -65,6 +65,52 @@ class LawyerChatBotApp:
         self.update_theme_colors()  # Set initial theme colors
         self.switch_discussion(self.current_discussion) # Set initial state for inputs
 
+    def init_ui(self):
+        self.page.title = "Bob the lawyer"
+        self.page.window_width = 900
+        self.page.window_height = 700
+        self.page.padding = 20
+
+        # Header with title and theme toggle
+        header = ft.Row(
+            controls=[
+                ft.Text("Chat", size=24, weight=ft.FontWeight.BOLD),
+                self.theme_toggle,
+            ],
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+        )
+
+        main_column = ft.Column(
+            expand=True,
+            controls=[
+                header,
+                ft.Divider(color=ft.Colors.GREY_600 if self.page.theme_mode == ft.ThemeMode.DARK else ft.Colors.GREY_300),
+                self.chat,
+                ft.Row(
+                    [
+                        self.upload_button,
+                        self.user_input,
+                        self.search_button,
+                        self.send_button,
+                    ],
+                    spacing=5,
+                    alignment=ft.MainAxisAlignment.START,
+                ),
+            ],
+        )
+
+        content = ft.Row(
+            controls=[
+                self.sidebar,
+                ft.Container(width=1, bgcolor=ft.Colors.GREY_600 if self.page.theme_mode == ft.ThemeMode.DARK else ft.Colors.GREY_300),
+                main_column,
+            ],
+            expand=True,
+        )
+
+        self.page.add(content)
+        self.user_input.focus()
+
     def initialize_database(self):
         """Connect to the database and set up the cursor."""
         self.conn = sqlite3.connect('database.db')
@@ -72,9 +118,10 @@ class LawyerChatBotApp:
         # No table creation here; tables are created on demand.
 
     def _create_table_if_not_exists(self, table_name):
-        """
-        Creates a specific table if it doesn't already exist.
-        This uses the standard schema for discussion tables.
+        """Creates a specific table if it doesn't already exist.
+            This uses the standard schema for discussion tables.
+            This method MUST be called from the main thread (UI thread)
+            as it accesses the database connection.
         """
         if not table_name: # Avoid issues with empty table names
             print("Error: Attempted to create a table with no name.")
@@ -92,27 +139,33 @@ class LawyerChatBotApp:
         except sqlite3.Error as e:
             print(f"Error creating table {table_name}: {e}")
 
-    
+    # Removed the original load_previous_messages
+
     def load_previous_messages(self, table_to_load: str):
-        """Load previous messages from the specified discussion table."""
+        """Load previous messages from the specified discussion table.
+        This method must be called from the main thread.
+        """
         self.clear_chat()
-        
-        try:
-            self.cursor.execute(f'SELECT sender, message FROM "{table_to_load}" ORDER BY timestamp')
-            messages = self.cursor.fetchall()
-            
-            for sender, message in messages:
-                if sender == "user":
-                    self.chat.controls.append(self.create_user_message(message))
-                else:  # bot or system messages
-                    self.chat.controls.append(self.create_bot_message(message))
-            self.page.update()
-        except sqlite3.OperationalError as e:
-            print(f"Error loading messages from table '{table_to_load}': {str(e)}")
-            self.chat.controls.append(
-                self.create_bot_message(f"⚠️ Error loading discussion '{table_to_load}': {str(e)}")
-            )
-            self.page.update()
+
+        if table_to_load:
+            try:
+                self.cursor.execute(
+                    f'SELECT sender, message FROM "{table_to_load}" ORDER BY timestamp'
+                )
+                messages = self.cursor.fetchall()
+
+                for sender, message in messages:
+                    if sender == "user":
+                        self.chat.controls.append(self.create_user_message(message))
+                    else:  # bot or system messages
+                        self.chat.controls.append(self.create_bot_message(message))
+                self.page.update()
+            except sqlite3.OperationalError as e:
+                print(f"Error loading messages from table '{table_to_load}': {str(e)}")
+                self.chat.controls.append(
+                    self.create_bot_message(f"⚠️ Error loading discussion '{table_to_load}': {str(e)}")
+                )
+                self.page.update()
 
     def clear_chat(self):
         """Clear the current chat display"""
@@ -288,18 +341,22 @@ class LawyerChatBotApp:
             self.cursor.execute(f'''
                 INSERT INTO {self.current_discussion} (sender, message, timestamp)
                 VALUES (?, ?, ?)
-            ''', (sender, message, timestamp))
+            ''', (sender, message, timestamp),)
             self.conn.commit()
         except sqlite3.OperationalError as e: # Typically "no such table"
             print(f"Error storing message (table '{self.current_discussion}' might not exist): {str(e)}")
             # Try to create the table if it doesn't exist
             self._create_table_if_not_exists(self.current_discussion)
-            # Retry storing the message
-            self.cursor.execute(f'''
-                INSERT INTO "{self.current_discussion}" (sender, message, timestamp)
-                VALUES (?, ?, ?)
-            ''', (sender, message, timestamp))
-            self.conn.commit()
+            # Retry storing the message (within the same thread after table creation)
+            try:
+                self.cursor.execute(f'''
+                    INSERT INTO "{self.current_discussion}" (sender, message, timestamp)
+                    VALUES (?, ?, ?)
+                ''', (sender, message, timestamp))
+                self.conn.commit()
+            except sqlite3.Error as e_retry:
+                print(f"Retry failed for storing message: {e_retry}")
+
 
     def toggle_theme(self, e):
         """Toggle between light and dark theme"""
@@ -314,53 +371,11 @@ class LawyerChatBotApp:
             else ft.Icons.DARK_MODE
         )
         self.update_theme_colors()
+        # Re-render the chat messages with the new theme
+        if self.current_discussion:  # Check if a discussion is active
+            self.load_previous_messages(self.current_discussion)
         self.page.update()
 
-    def init_ui(self):
-        self.page.title = "Bob the lawyer"
-        self.page.window_width = 900
-        self.page.window_height = 700
-        self.page.padding = 20
-
-        # Header with title and theme toggle
-        header = ft.Row(
-            controls=[
-                ft.Text("Chat", size=24, weight=ft.FontWeight.BOLD),
-                self.theme_toggle,
-            ],
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-        )
-
-        main_column = ft.Column(
-            expand=True,
-            controls=[
-                header,
-                ft.Divider(color=ft.Colors.GREY_600 if self.page.theme_mode == ft.ThemeMode.DARK else ft.Colors.GREY_300),
-                self.chat,
-                ft.Row(
-                    [
-                        self.upload_button,
-                        self.user_input,
-                        self.search_button,
-                        self.send_button,
-                    ],
-                    spacing=5,
-                    alignment=ft.MainAxisAlignment.START,
-                ),
-            ],
-        )
-
-        content = ft.Row(
-            controls=[
-                self.sidebar,
-                ft.Container(width=1, bgcolor=ft.Colors.GREY_600 if self.page.theme_mode == ft.ThemeMode.DARK else ft.Colors.GREY_300),
-                main_column,
-            ],
-            expand=True,
-        )
-
-        self.page.add(content)
-        self.user_input.focus()
 
     def upload_files(self, e):
         self.file_picker.pick_files(
@@ -481,6 +496,7 @@ class LawyerChatBotApp:
         self.upload_button.disabled = True
         self.search_button.disabled = True
         self.page.update()
+        self.theme_toggle.disabled = True
 
         try:
             reply = generate_reply(full_question)
@@ -496,6 +512,7 @@ class LawyerChatBotApp:
         self.user_input.disabled = False
         self.send_button.disabled = False
         self.upload_button.disabled = False
+        self.theme_toggle.disabled = False
         self.search_button.disabled = False
         self.page.update()
         self.user_input.focus()
@@ -542,7 +559,7 @@ class LawyerChatBotApp:
             }
             
             response = requests.get("https://serpapi.com/search", params=params, timeout=10)
-            response.raise_for_status()
+            response.raise_for_status()  
             results = response.json()
             
             if "organic_results" in results:
@@ -568,6 +585,7 @@ class LawyerChatBotApp:
         self.send_button.disabled = False
         self.upload_button.disabled = False
         self.search_button.disabled = False
+        self.theme_toggle.disabled = False  
         self.page.update()
 
     def update_theme_colors(self):
