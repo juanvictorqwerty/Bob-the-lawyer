@@ -183,14 +183,14 @@ class ModernNavBar(ft.Container):
             # Refresh sidebar
             self.refresh_sidebar(e.page)
             
-            e.page.show_snack_bar(
+            self.main_app.page.show_snack_bar(
                 ft.SnackBar(
                     ft.Text(f"Deleted discussion: {table_name}"), 
                     open=True
                 )
             )
         except Exception as ex:
-            e.page.show_snack_bar(
+            self.main_app.page.show_snack_bar(
                 ft.SnackBar(
                     ft.Text(f"Error deleting discussion: {str(ex)}"), 
                     open=True
