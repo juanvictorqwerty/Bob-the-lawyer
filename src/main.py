@@ -154,11 +154,23 @@ class LawyerChatBotApp:
                 )
                 messages = self.cursor.fetchall()
 
-                for sender, message in messages:
+                for sender, message_content in messages: # Renamed for clarity
                     if sender == "user":
-                        self.chat.controls.append(self.create_user_message(message))
-                    else:  # bot or system messages
-                        self.chat.controls.append(self.create_bot_message(message))
+                        self.chat.controls.append(self.create_user_message(message_content))
+                    elif sender == "file":
+                        # Parse file_name and content_preview from message_content
+                        # Expected format from store_message: f"{file_name}: {content_preview}"
+                        parts = message_content.split(": ", 1)
+                        if len(parts) == 2:
+                            file_name, content_preview = parts
+                            self.chat.controls.append(self.create_file_message(file_name, content_preview))
+                        else:
+                            # Fallback if parsing fails, render as a bot message
+                            self.chat.controls.append(self.create_bot_message(f"File (error displaying): {message_content}"))
+                    elif sender == "bot" or sender == "system": # Explicitly handle bot and system messages
+                        self.chat.controls.append(self.create_bot_message(message_content))
+                    else: # Fallback for any other unexpected sender type
+                        self.chat.controls.append(self.create_bot_message(f"Unknown ({sender}): {message_content}"))
                 self.page.update()
             except sqlite3.OperationalError as e:
                 print(f"Error loading messages from table '{table_to_load}': {str(e)}")
@@ -206,6 +218,8 @@ class LawyerChatBotApp:
 
     def create_user_message(self, message):
         is_dark = self.page.theme_mode == ft.ThemeMode.DARK
+        # Calculate width based on message length but cap at 600
+        text_width = min(600, len(message) * 8 + 100) # Adjust multiplier as needed
         return ft.Row(
             controls=[
                 ft.Container(expand=True),  # This pushes the message container to the right
@@ -232,6 +246,7 @@ class LawyerChatBotApp:
                         color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK),
                         offset=ft.Offset(0, 1.5),
                     ),
+                    width=text_width, # Apply the calculated width
                 )
             ],
             alignment=ft.MainAxisAlignment.END,  # This ensures right alignment
@@ -292,6 +307,8 @@ class LawyerChatBotApp:
         )
     def create_file_message(self, file_name, content_preview):
         is_dark = self.page.theme_mode == ft.ThemeMode.DARK
+        # Calculate width based on message length but cap at 600
+        text_width = min(600, (len(file_name) + len(content_preview)) * 6 + 100) # Adjust multiplier
         return ft.Row(
             [
                 ft.Container(
@@ -329,6 +346,7 @@ class LawyerChatBotApp:
                         color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK),
                         offset=ft.Offset(0, 1.5),
                     ),
+                    width=text_width, # Apply the calculated width
                 )
             ],
             alignment=ft.MainAxisAlignment.END,
@@ -356,25 +374,6 @@ class LawyerChatBotApp:
                 self.conn.commit()
             except sqlite3.Error as e_retry:
                 print(f"Retry failed for storing message: {e_retry}")
-
-
-    def toggle_theme(self, e):
-        """Toggle between light and dark theme"""
-        self.page.theme_mode = (
-            ft.ThemeMode.DARK
-            if self.page.theme_mode == ft.ThemeMode.LIGHT
-            else ft.ThemeMode.LIGHT
-        )
-        self.theme_toggle.Icon = (
-            ft.Icons.LIGHT_MODE
-            if self.page.theme_mode == ft.ThemeMode.DARK
-            else ft.Icons.DARK_MODE
-        )
-        self.update_theme_colors()
-        # Re-render the chat messages with the new theme
-        if self.current_discussion:  # Check if a discussion is active
-            self.load_previous_messages(self.current_discussion)
-        self.page.update()
 
 
     def upload_files(self, e):
@@ -453,69 +452,6 @@ class LawyerChatBotApp:
         df = pd.read_excel(file_path)
         return df.to_string()
 
-    def send_click(self, e):
-        question = self.user_input.value.strip()
-        if not question and not self.current_files:
-            return
-        
-        if not self.current_discussion:
-            self.page.show_snack_bar(
-                ft.SnackBar(content=ft.Text("Please select or create a discussion first."), open=True)
-            )
-            return
-
-        # If there are files, include them in the context
-        context = ""
-        if self.current_files:
-            context = "\n\n[Attached Files Context]\n"
-            for file in self.current_files:
-                context += f"\nFile: {file['name']}\nContent:\n{file['content'][:1000]}\n"
-            self.current_files = []  # Clear files after sending
-
-        if question:
-            full_question = question + context
-            self.store_message("user", question)
-            self.chat.controls.append(self.create_user_message(question))
-        else:
-            full_question = "Please analyze these documents:" + context
-            self.store_message("user", "Uploaded documents for analysis")
-
-        if context:
-            self.chat.controls.append(self.create_bot_message("Received documents for analysis"))
-
-        thinking = ft.Container(
-            ft.Row([
-                ft.ProgressRing(width=20, height=20, stroke_width=2),
-                ft.Text("Thinking...")
-            ], spacing=10),
-            alignment=ft.alignment.center_left,
-        )
-        self.chat.controls.append(thinking)
-        self.user_input.disabled = True
-        self.send_button.disabled = True
-        self.upload_button.disabled = True
-        self.search_button.disabled = True
-        self.page.update()
-        self.theme_toggle.disabled = True
-
-        try:
-            reply = generate_reply(full_question)
-            self.store_message("bot", reply)
-        except Exception as err:
-            reply = f"⚠️ Error: {str(err)}"
-            self.store_message("system", f"Error: {str(err)}")
-
-        self.chat.controls.remove(thinking)
-        self.chat.controls.append(self.create_bot_message(reply))
-
-        self.user_input.value = ""
-        self.user_input.disabled = False
-        self.send_button.disabled = False
-        self.upload_button.disabled = False
-        self.theme_toggle.disabled = False
-        self.search_button.disabled = False
-        self.page.update()
-        self.user_input.focus()
 
     def web_search_click(self, e):
         """Handle web search button click"""
@@ -588,6 +524,25 @@ class LawyerChatBotApp:
         self.theme_toggle.disabled = False  
         self.page.update()
 
+    def toggle_theme(self, e):
+        """Toggle between light and dark theme"""
+        self.page.theme_mode = (
+            ft.ThemeMode.DARK
+            if self.page.theme_mode == ft.ThemeMode.LIGHT
+            else ft.ThemeMode.LIGHT
+        )
+        self.theme_toggle.icon = (
+            ft.Icons.LIGHT_MODE
+            if self.page.theme_mode == ft.ThemeMode.DARK
+            else ft.Icons.DARK_MODE
+        )
+        self.update_theme_colors()
+        # Re-render the chat messages with the new theme
+        if self.current_discussion:  # Check if a discussion is active
+            self.load_previous_messages(self.current_discussion)
+        self.page.update()
+
+
     def update_theme_colors(self):
         """Update all color references based on current theme"""
         is_dark = self.page.theme_mode == ft.ThemeMode.DARK
@@ -605,6 +560,71 @@ class LawyerChatBotApp:
         self.upload_button.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700
         self.theme_toggle.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700
         self.search_button.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700   
+
+    def send_click(self, e):
+        question = self.user_input.value.strip()
+        if not question and not self.current_files:
+            return
+        
+        if not self.current_discussion:
+            self.page.show_snack_bar(
+                ft.SnackBar(content=ft.Text("Please select or create a discussion first."), open=True)
+            )
+            return
+
+        # If there are files, include them in the context
+        context = ""
+        if self.current_files:
+            context = "\n\n[Attached Files Context]\n"
+            for file in self.current_files:
+                context += f"\nFile: {file['name']}\nContent:\n{file['content'][:1000]}\n"
+            self.current_files = []  # Clear files after sending
+
+        if question:
+            full_question = question + context
+            self.store_message("user", question)
+            self.chat.controls.append(self.create_user_message(question))
+        else:
+            full_question = "Please analyze these documents:" + context
+            self.store_message("user", "Uploaded documents for analysis")
+
+        if context:
+            self.chat.controls.append(self.create_bot_message("Received documents for analysis"))
+
+        thinking = ft.Container(
+            ft.Row([
+                ft.ProgressRing(width=20, height=20, stroke_width=2),
+                ft.Text("Thinking...")
+            ], spacing=10),
+            alignment=ft.alignment.center_left,
+        )
+        self.chat.controls.append(thinking)
+        self.user_input.disabled = True
+        self.send_button.disabled = True
+        self.upload_button.disabled = True
+        self.search_button.disabled = True
+        self.theme_toggle.disabled = True # Disable before page update
+        self.page.update()
+
+        try:
+            reply = generate_reply(full_question)
+            self.store_message("bot", reply)
+        except Exception as err:
+            reply = f"⚠️ Error: {str(err)}"
+            self.store_message("system", f"Error: {str(err)}")
+
+        self.chat.controls.remove(thinking)
+        self.chat.controls.append(self.create_bot_message(reply))
+
+        self.user_input.value = ""
+        self.user_input.disabled = False
+        self.send_button.disabled = False
+        self.upload_button.disabled = False
+        self.theme_toggle.disabled = False
+        self.search_button.disabled = False
+        self.page.update()
+        self.user_input.focus()
+
 
     def __del__(self):
         """Close database connection when the app is closed"""

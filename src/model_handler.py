@@ -8,10 +8,8 @@ import random
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Get the API endpoint from an environment variable or use a default.  This allows for easy configuration of the API URL without changing the code.
-MODEL_API_URL = os.environ.get("MODEL_API_URL", "https://juanvic-Bob2.hf.space/")
-MODEL_API_URL = os.environ.get("MODEL_API_URL", "https://juanvic-Bob.hf.space/")
-
+# Set the API URL from environment variable or use a random one from the list
+# List of available API URLs for the model
 api_urls = [
     "https://juanvic-Bob2.hf.space/",
     "https://juanvic-Bob.hf.space/"
