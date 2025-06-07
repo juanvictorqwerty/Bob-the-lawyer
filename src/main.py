@@ -4,10 +4,11 @@ from datetime import datetime
 from model_handler import generate_reply
 from sidebar import render_sidebar  # Optional sidebar module if you use one
 import os
+import platform  # For platform detection
 import requests  # Added for web search
 
 # Import file processing libraries
-import PyPDF2
+import pypdf
 from docx import Document
 from pptx import Presentation
 import pandas as pd
@@ -113,9 +114,9 @@ class LawyerChatBotApp:
 
     def initialize_database(self):
         """Connect to the database and set up the cursor."""
-        self.conn = sqlite3.connect('database.db')
+        self.conn = sqlite3.connect(self.get_database_path())
         self.cursor = self.conn.cursor()
-        # No table creation here; tables are created on demand.
+        
 
     def _create_table_if_not_exists(self, table_name):
         """Creates a specific table if it doesn't already exist.
@@ -138,6 +139,22 @@ class LawyerChatBotApp:
             
         except sqlite3.Error as e:
             print(f"Error creating table {table_name}: {e}")
+
+    def get_database_path(self):
+        """Get the appropriate database path based on the OS."""
+        system = platform.system()
+        if system == "Windows":
+            app_data_dir = os.path.join(os.environ['LOCALAPPDATA'], "BobTheLawyer")
+        elif system == "Darwin":  # macOS
+            app_data_dir = os.path.expanduser("~/Library/Application Support/BobTheLawyer")
+        else:  # Linux and other Unix-like systems
+            app_data_dir = os.path.expanduser("~/.bobthelawyer")
+
+        # Create the directory if it doesn't exist
+        os.makedirs(app_data_dir, exist_ok=True)
+
+        db_path = os.path.join(app_data_dir, "database.db")
+        return db_path
 
     # Removed the original load_previous_messages
 
@@ -430,7 +447,7 @@ class LawyerChatBotApp:
     def extract_text_from_pdf(self, file_path: str) -> str:
         text = []
         with open(file_path, 'rb') as file:
-            reader = PyPDF2.PdfReader(file)
+            reader = pypdf.PdfReader(file)
             for page in reader.pages:
                 text.append(page.extract_text())
         return "\n".join(text)
