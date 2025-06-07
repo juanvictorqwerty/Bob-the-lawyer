@@ -5,7 +5,7 @@ class ModernNavBar(ft.Container):
     def __init__(self, main_app):
         self.main_app = main_app  # Reference to the main app
         self.current_selected = None  # Track currently selected discussion
-        # Track the highest discussion number
+        # Track the highest discussion number.
         self.highest_discussion_num = 0
         # Connect to the database and get table names
         table_names = self.get_database_tables()
@@ -64,7 +64,7 @@ class ModernNavBar(ft.Container):
             self.highest_discussion_num += 1
             table_name = f"discussion_{self.highest_discussion_num}"
             
-            conn = sqlite3.connect('database.db')
+            conn = sqlite3.connect(self.main_app.get_database_path())
             cursor = conn.cursor()
             
             # Create a new table with some basic structure
@@ -84,8 +84,7 @@ class ModernNavBar(ft.Container):
             
             # Refresh the sidebar to show the new table
             self.refresh_sidebar(e.page, table_name)
-            
-            
+
         except Exception as e:
             e.page.show_snack_bar(
                 ft.SnackBar(
@@ -97,7 +96,7 @@ class ModernNavBar(ft.Container):
     def get_database_tables(self):
         """Fetch all table names from the SQLite database, sorted in descending order."""
         try:
-            conn = sqlite3.connect('database.db')
+            conn = sqlite3.connect(self.main_app.get_database_path())
             cursor = conn.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             tables_data = cursor.fetchall()
@@ -169,7 +168,7 @@ class ModernNavBar(ft.Container):
         table_name = e.control.data
         
         try:
-            conn = sqlite3.connect('database.db')
+            conn = sqlite3.connect(self.main_app.get_database_path())
             cursor = conn.cursor()
             cursor.execute(f"DROP TABLE {table_name}")
             conn.commit()
