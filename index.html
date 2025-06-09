@@ -11,6 +11,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            flex-direction: column; /* Stack items vertically */
             background-color: #f0f0f0;
         }
         .container {
@@ -30,13 +31,31 @@
         .button:hover {
             background-color: #45a049;
         }
+        .blue-wrapper {
+            background-color: #007bff; /* A standard blue */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* For the "on top" effect */
+            text-align: center; /* Center the heading */
+        }
+        
+        body > h1 { /* Style for h1 directly under body */
+            color: #333; /* Dark grey/black for readability */
+            /* background-color: #007bff; */ /* Removed background */
+            padding: 10px 20px; /* Kept padding for spacing */
+            border-radius: 8px;
+            margin-bottom: 20px; /* Space between title and blue-wrapper */
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="https://www.google.com" class="button">Google</a>
-        <a href="https://www.facebook.com" class="button">Facebook</a>
-        <a href="https://www.youtube.com" class="button">YouTube</a>
+    <h1>Bob The Lawyer Downloads</h1>
+    <div class="blue-wrapper">
+        <div class="container">
+            <a href="https://www.google.com" class="button">Google</a>
+            <a href="https://www.facebook.com" class="button">Facebook</a>
+            <a href="https://www.youtube.com" class="button">YouTube</a>
+        </div>
     </div>
 </body>
 </html>
