@@ -105,8 +105,6 @@ jobs:
         working-directory: ./src
         run: |
           # Optional: Clean .pyc files if Flet doesn't handle it fully for bundled apps
-          # find "build/macos/${{ env.APP_NAME }}.app" -name "*.pyc" -delete
-          # find "build/macos/${{ env.APP_NAME }}.app" -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
           cd build && zip -qr ../${{ env.APP_NAME }}-macos.zip macos/
 
       - name: Upload artifact
