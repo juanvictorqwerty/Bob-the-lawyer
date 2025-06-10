@@ -11,7 +11,7 @@ import requests  # Added for web search
 import pypdf
 from docx import Document
 from pptx import Presentation
-import pandas as pd
+import openpyxl # Changed from pandas to openpyxl
 
 
 class LawyerChatBotApp:
@@ -428,14 +428,25 @@ class LawyerChatBotApp:
                     "content": text
                 })
                 
-                # Show file preview as user message
-                preview = text[:200] + "..." if len(text) > 200 else text
+                # Generate 4-line preview for display and storage
+                original_lines = text.splitlines()
+                num_original_lines = len(original_lines)
+
+                if num_original_lines > 4:
+                    # If more than 4 lines, show the first 3 and append "..." on a new line (total 4 lines for preview)
+                    preview_lines_to_show = original_lines[:3]
+                    preview = "\n".join(preview_lines_to_show) + "\n..."
+                else:
+                    # If 4 or fewer lines, show all of them.
+                    preview = "\n".join(original_lines)
+
+                # Show file preview in chat
                 self.chat.controls.append(
                     self.create_file_message(file_name, preview))
                 
-                # Store in database as user message
+                # Store upload action and file preview in database
                 self.store_message("user", f"Uploaded document: {file_name}")
-                self.store_message("file", f"{file_name}: {text[:200]}...")
+                self.store_message("file", f"{file_name}: {preview}") # Use the generated 4-line preview
                 
             except Exception as ex:
                 error_msg = f"Error processing {file_name}: {str(ex)}"
@@ -466,8 +477,19 @@ class LawyerChatBotApp:
         return "\n".join(text)
 
     def extract_text_from_excel(self, file_path: str) -> str:
-        df = pd.read_excel(file_path)
-        return df.to_string()
+        """Extract text from all cells in all sheets of an Excel file."""
+        workbook = openpyxl.load_workbook(file_path, data_only=True) # data_only=True to get cell values, not formulas
+        all_text = []
+        for sheet_name in workbook.sheetnames:
+            sheet = workbook[sheet_name]
+            sheet_text = []
+            for row in sheet.iter_rows():
+                for cell in row:
+                    if cell.value is not None:
+                        sheet_text.append(str(cell.value))
+            if sheet_text: # Add sheet name if it has content
+                all_text.append(f"--- Sheet: {sheet_name} ---\n" + "\n".join(sheet_text))
+        return "\n\n".join(all_text)
 
 
     def web_search_click(self, e):
