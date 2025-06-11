@@ -181,6 +181,7 @@ class ModernNavBar(ft.Container):
             if self.current_selected == table_name:
                 self.current_selected = None # Clear the current selection.
                 self.main_app.switch_discussion(None) # Tell main_app no discussion is selected.
+                self.main_app.clear_chat()  # Clear the chat history
             
             # Refresh sidebar
             self.refresh_sidebar(e.page) # Update the sidebar UI.
