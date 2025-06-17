@@ -42,8 +42,8 @@ def batch_pdf_to_single_txt(input_dir, output_file_path):
 
 if __name__ == "__main__":
     # Set your input/output paths
-    PDF_DIR = r"C:\Users\JUAN MIKE\Desktop\Bob-the-lawyer\Bob-the-lawyer\LOIS_LAWS"
-    OUTPUT_TXT = "C:/Users/JUAN MIKE/Desktop/Bob-the-lawyer/Bob-the-lawyer/Create_dataset/CameroonLaw.txt"
+    PDF_DIR = "./LOIS_LAWS"
+    OUTPUT_TXT = "./LawsTXT/ExtractedLaws.txt"
     
     # Convert all PDFs to a single TXT file
     batch_pdf_to_single_txt(PDF_DIR, OUTPUT_TXT)

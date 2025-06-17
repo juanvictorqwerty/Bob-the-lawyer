@@ -101,21 +101,6 @@ jobs:
             --build-version $BUILD_VERSION \
             --verbose
 
-      - name: Prepare macOS artifact
-        working-directory: ./src
-        run: |
-          # Optional: Clean .pyc files if Flet doesn't handle it fully for bundled apps
-          # find "build/macos/${{ env.APP_NAME }}.app" -name "*.pyc" -delete
-          # find "build/macos/${{ env.APP_NAME }}.app" -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-          cd build && zip -qr ../${{ env.APP_NAME }}-macos.zip macos/
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-macos
-          # Upload the zipped artifact
-          path: src/${{ env.APP_NAME }}-macos.zip
-          retention-days: 90
 
   build-windows:
     runs-on: windows-latest
