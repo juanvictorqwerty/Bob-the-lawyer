@@ -71,49 +71,7 @@ jobs:
           path: src/Bob-linux.zip
           retention-days: 90
 
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      - name: Install Python dependencies
-        working-directory: ./src
-        run: |
-          python -m pip install --upgrade pip
-          pip install flet==${{ env.FLET_VERSION }} flet-cli==${{ env.FLET_VERSION }} flet-desktop==${{ env.FLET_VERSION }}
-          pip install -r requirements.txt
-          pip cache purge
-
-      - name: Build macOS Application
-        working-directory: ./src
-        run: |
-          rm -rf build/
-          flet build macos \
-            --project "${APP_NAME}"  \
-            --build-number $BUILD_NUMBER \
-            --build-version $BUILD_VERSION \
-            --verbose
-
-      - name: Prepare macOS artifact
-        working-directory: ./src
-        run: |
-          # Optional: Clean .pyc files if Flet doesn't handle it fully for bundled apps
-          cd build && zip -qr ../${{ env.APP_NAME }}-macos.zip macos/
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-macos
-          # Upload the zipped artifact
-          path: src/${{ env.APP_NAME }}-macos.zip
-          retention-days: 90
 
   build-windows:
     runs-on: windows-latest
