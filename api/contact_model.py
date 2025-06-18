@@ -13,9 +13,9 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = "You are a legal assistant. Provide accurate, concise responses to legal queries."
-BASE_MODEL_ID = "microsoft/phi-1_5"
-ADAPTER_ID = "juanvic/Bob-law-phi"
+SYSTEM_PROMPT = "You are a legal assistant on the law of Cameroon"
+BASE_MODEL_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+ADAPTER_ID = "juanvic/Bob-tinyllma-law-lora"
 
 chat_pipeline_global = None
 tokenizer_global = None

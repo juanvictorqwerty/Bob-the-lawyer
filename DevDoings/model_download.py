@@ -1,19 +1,15 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import os
+from peft import PeftModel
+from transformers import AutoModelForCausalLM
 
-model_name = "microsoft/phi-3-mini-4k-instruct"  # Replace with your model
+# Load the base model
+base_model = AutoModelForCausalLM.from_pretrained("microsoft/phi-1_5")
 
-# Download model and tokenizer
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+# Load the PEFT adapter
+model = PeftModel.from_pretrained(base_model, "juanvic/Bob-law-phi")
 
-# Save locally
-save_dir = "C:/Program Files/Bob-the-lawyer-model/phi-3-local"
+# Merge the adapter with the base model and unload the adapter
+merged_model = model.merge_and_unload()
 
-# Create parent directories if they don't exist
-os.makedirs(save_dir, exist_ok=True)  # This creates all necessary parent directories
-
-model.save_pretrained(save_dir)
-tokenizer.save_pretrained(save_dir)
-
-print(f"Model saved to {save_dir}")
+# Now you can use merged_model as a regular model
+# You might want to save it:
+merged_model.save_pretrained("merged_model")

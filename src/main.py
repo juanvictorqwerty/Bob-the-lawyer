@@ -536,6 +536,7 @@ class LawyerChatBotApp:
         )
         self.chat.controls.append(thinking)
         # Disable input fields during search.
+        self.theme_toggle.disabled = True
         self.user_input.disabled = True
         self.send_button.disabled = True
         self.upload_button.disabled = True
@@ -549,7 +550,7 @@ class LawyerChatBotApp:
                 "q": query,
                 "engine": "google",
                 "api_key": api_key,
-                "num": 3
+                "num": 2
             }
             
             response = requests.get("https://serpapi.com/search", params=params, timeout=10) # Make the API request.
@@ -557,16 +558,58 @@ class LawyerChatBotApp:
             results = response.json() # Parse the JSON response.
             
             if "organic_results" in results: # Check if organic search results are present.
-                output = ["🌐 Web Results:"]
-                for idx, res in enumerate(results["organic_results"][:3], 1): # Format top 3 results.
-                    output.append(f"{idx}. {res.get('title', 'No title')}\n   {res.get('snippet', 'No description')}\n   {res.get('link', 'No URL')}\n")
-                result = "\n".join(output)
+                # Format search results for display
+                display_output = ["🌐 Web Results:"]
+                # Format search results for AI model context
+                ai_context = "\n\nFROM THE INTERNET I FOUND:\n"
+                
+                for idx, res in enumerate(results["organic_results"][:2], 1): # Format top 3 results.
+                    title = res.get('title', 'No title')
+                    snippet = res.get('snippet', 'No description')
+                    link = res.get('link', 'No URL')
+                    
+                    # For display in chat
+                    display_output.append(f"{idx}. {title}\n   {snippet}\n   {link}\n")
+                    
+                    # For AI context (more structured)
+                    ai_context += f"\nResult {idx}:\nTitle: {title}\nContent: {snippet}\nSource: {link}\n"
+                
+                display_result = "\n".join(display_output)
+                
+                # Create the enhanced query for the AI model
+                enhanced_query = f"{query}{ai_context}\n\nPlease provide a comprehensive answer based on the search results above."
+                
             else:
-                result = "🔍 No results found"
+                display_result = "🔍 No results found"
+                enhanced_query = f"{query}\n\nFROM THE INTERNET I FOUND:\nNo relevant search results were found for this query."
             
-            self.store_message("bot", result) # Store the search results.
+            # Store and display the search results
+            self.store_message("bot", display_result) # Store the search results.
             self.chat.controls.remove(thinking) # Remove loading indicator.
-            self.chat.controls.append(self.create_bot_message(result)) # Display results in chat.
+            self.chat.controls.append(self.create_bot_message(display_result)) # Display results in chat.
+            
+            # Now send the enhanced query to the AI model
+            thinking_ai = ft.Container(
+                ft.Row([
+                    ft.ProgressRing(width=20, height=20, stroke_width=2),
+                    ft.Text("Analyzing search results...")
+                ], spacing=10),
+                alignment=ft.alignment.center_left,
+            )
+            self.chat.controls.append(thinking_ai)
+            self.page.update()
+            
+            try:
+                # Get AI response with search context
+                ai_reply = generate_reply(enhanced_query)
+                self.store_message("bot", ai_reply)
+                self.chat.controls.remove(thinking_ai)
+                self.chat.controls.append(self.create_bot_message(ai_reply))
+            except Exception as ai_err:
+                ai_error_msg = f"⚠️ Error analyzing results: {str(ai_err)}"
+                self.store_message("system", ai_error_msg)
+                self.chat.controls.remove(thinking_ai)
+                self.chat.controls.append(self.create_bot_message(ai_error_msg))
             
         except Exception as err: # Handle any errors during the search process.
             error_msg = f"⚠️ Search failed: {str(err)}"
