@@ -509,6 +509,41 @@ class LawyerChatBotApp:
                 all_text.append(f"--- Sheet: {sheet_name} ---\n" + "\n".join(sheet_text)) # Add sheet content with a header.
         return "\n\n".join(all_text)
 
+    def toggle_theme(self, e):
+        """Toggle between light and dark theme"""
+        self.page.theme_mode = (
+            ft.ThemeMode.DARK # Switch to dark if current is light.
+            if self.page.theme_mode == ft.ThemeMode.LIGHT
+            else ft.ThemeMode.LIGHT # Switch to light if current is dark.
+        )
+        self.theme_toggle.icon = (
+            ft.Icons.LIGHT_MODE # Set icon to light mode if theme is dark.
+            if self.page.theme_mode == ft.ThemeMode.DARK
+            else ft.Icons.DARK_MODE # Set icon to dark mode if theme is light.
+        )
+        self.update_theme_colors() # Apply color changes to UI elements.
+        # Re-render the chat messages with the new theme
+        if self.current_discussion:  # Check if a discussion is active
+            self.load_previous_messages(self.current_discussion) # Reload messages to apply new theme styles.
+        self.page.update() # Update the page.
+
+    def update_theme_colors(self):
+        """Update all color references based on current theme"""
+        is_dark = self.page.theme_mode == ft.ThemeMode.DARK
+        
+        # Update page colors
+        self.page.bgcolor = ft.Colors.GREY_900 if is_dark else ft.Colors.GREY_50
+        
+        # Update input field
+        self.user_input.color = ft.Colors.WHITE if is_dark else ft.Colors.BLACK
+        self.user_input.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.GREY_500 if is_dark else ft.Colors.GREY_200)
+        self.user_input.border_color = ft.Colors.GREY_600 if is_dark else ft.Colors.GREY_300
+        
+        # Update buttons
+        self.send_button.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700
+        self.upload_button.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700
+        self.theme_toggle.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700
+        self.search_button.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700   
 
     def web_search_click(self, e):
         """Handle web search button click"""
@@ -546,8 +581,9 @@ class LawyerChatBotApp:
         try:
             # Perform search with direct API key
             api_key = "c993fe8beec5d447b42da49cec429aab6460e9170118ba6eb56473f574705105" # SerpApi API key.
+            search_query = f"{query} from the Law of Cameroon"
             params = {
-                "q": query,
+                "q": search_query,
                 "engine": "google",
                 "api_key": api_key,
                 "num": 2
@@ -625,43 +661,6 @@ class LawyerChatBotApp:
         self.search_button.disabled = False
         self.theme_toggle.disabled = False  
         self.page.update()
-
-    def toggle_theme(self, e):
-        """Toggle between light and dark theme"""
-        self.page.theme_mode = (
-            ft.ThemeMode.DARK # Switch to dark if current is light.
-            if self.page.theme_mode == ft.ThemeMode.LIGHT
-            else ft.ThemeMode.LIGHT # Switch to light if current is dark.
-        )
-        self.theme_toggle.icon = (
-            ft.Icons.LIGHT_MODE # Set icon to light mode if theme is dark.
-            if self.page.theme_mode == ft.ThemeMode.DARK
-            else ft.Icons.DARK_MODE # Set icon to dark mode if theme is light.
-        )
-        self.update_theme_colors() # Apply color changes to UI elements.
-        # Re-render the chat messages with the new theme
-        if self.current_discussion:  # Check if a discussion is active
-            self.load_previous_messages(self.current_discussion) # Reload messages to apply new theme styles.
-        self.page.update() # Update the page.
-
-
-    def update_theme_colors(self):
-        """Update all color references based on current theme"""
-        is_dark = self.page.theme_mode == ft.ThemeMode.DARK
-        
-        # Update page colors
-        self.page.bgcolor = ft.Colors.GREY_900 if is_dark else ft.Colors.GREY_50
-        
-        # Update input field
-        self.user_input.color = ft.Colors.WHITE if is_dark else ft.Colors.BLACK
-        self.user_input.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.GREY_500 if is_dark else ft.Colors.GREY_200)
-        self.user_input.border_color = ft.Colors.GREY_600 if is_dark else ft.Colors.GREY_300
-        
-        # Update buttons
-        self.send_button.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700
-        self.upload_button.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700
-        self.theme_toggle.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700
-        self.search_button.Icon_color = ft.Colors.WHITE if is_dark else ft.Colors.BLUE_700   
 
     def send_click(self, e):
         """Handles the click event of the send button."""
