@@ -18,7 +18,7 @@ MODEL_API_URL = os.environ.get("MODEL_API_URL", random.choice(api_urls))
 
 # Chat generation function
 def generate_reply(user_input: str,
-                    max_new_tokens: int = 256,
+                    max_new_tokens: int = 1024,
                     temperature: float = 0.7,
                     top_p: float = 0.9) -> str:
     """Sends a request to the external FastAPI model server for text generation.
