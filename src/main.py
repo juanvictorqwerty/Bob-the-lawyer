@@ -552,9 +552,7 @@ class LawyerChatBotApp:
             return
 
         if not self.current_discussion:
-            self.page.show_snack_bar(
-                ft.SnackBar(content=ft.Text("Please select or create a discussion first."), open=True)
-            )
+            print("Please start a new discussion first.")
             return
 
         # Store and display query
@@ -668,10 +666,8 @@ class LawyerChatBotApp:
         if not question and not self.current_files: # If no text and no files, do nothing.
             return
         
-        if not self.current_discussion: # If no discussion is active, show a snackbar.
-            self.page.show_snack_bar(
-                ft.SnackBar(content=ft.Text("Please select or create a discussion first."), open=True)
-            )
+        if not self.current_discussion: # If no discussion is active, 
+            print("Please start a new discussion first.")
             return
 
         # If there are files, include them in the context

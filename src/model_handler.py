@@ -12,13 +12,13 @@ logger = logging.getLogger(__name__)     # Creates a logger instance for this mo
 # List of available API URLs for the model
 api_urls = [
     "https://juanvic-Bob2.hf.space/",  # First potential API endpoint for the model.
-    "https://juanvic-Bob.hf.space/"   # Second potential API endpoint for the model.
+    "https://juanvic-Bob2.hf.space/"   # Second potential API endpoint for the model.
 ]
 MODEL_API_URL = os.environ.get("MODEL_API_URL", random.choice(api_urls))
 
 # Chat generation function
 def generate_reply(user_input: str,
-                    max_new_tokens: int = 1024,
+                    max_new_tokens: int = 128,
                     temperature: float = 0.7,
                     top_p: float = 0.9) -> str:
     """Sends a request to the external FastAPI model server for text generation.
