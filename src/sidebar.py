@@ -9,23 +9,27 @@ class ModernNavBar(ft.Container):
         self.highest_discussion_num = 0  
         
         table_names = self.get_database_tables()  
-        self.update_highest_discussion_num(table_names)  
-        
+        self.update_highest_discussion_num(table_names)
+
+        self.discussion_list_view = ft.Column(
+            expand=True,
+            scroll=ft.ScrollMode.AUTO,
+            controls=[
+                ft.Container(
+                    padding=ft.padding.only(bottom=20),
+                    content=ft.Text("Bob the lawyer", size=16, weight=ft.FontWeight.BOLD)
+                ),
+                self.create_discussion_button(),
+                *self.create_table_list_items(table_names),
+            ],
+        )
+
         super().__init__(
-            width=250,  
-            padding=10, 
-            clip_behavior=ft.ClipBehavior.HARD_EDGE, 
+            width=250,
+            padding=10,
+            clip_behavior=ft.ClipBehavior.HARD_EDGE,
             content=ft.Column(
-                expand=True,
-                scroll=ft.ScrollMode.AUTO,
-                controls=[
-                    ft.Container(
-                        padding=ft.padding.only(bottom=20),
-                        content=ft.Text("Bob the lawyer", size=16, weight=ft.FontWeight.BOLD) 
-                    ),
-                    self.create_discussion_button(),  
-                    *self.create_table_list_items(table_names),  
-                ],
+                expand=True, controls=[self.discussion_list_view, self.create_about_us_button()]
             ),
         )
 
@@ -169,16 +173,53 @@ class ModernNavBar(ft.Container):
         table_names = self.get_database_tables() 
         if new_table_name:
             self.current_selected = new_table_name 
-        self.content.controls = [
+        
+        self.discussion_list_view.controls = [
             ft.Container(
                 padding=ft.padding.only(bottom=20),
                 content=ft.Text("Bob the lawyer", size=16, weight=ft.FontWeight.BOLD)
             ),
-            self.create_discussion_button(), 
-            *self.create_table_list_items(table_names), 
+            self.create_discussion_button(),
+            *self.create_table_list_items(table_names),
         ]
+
+        self.content.controls[1] = self.create_about_us_button()
         page.update()
 
+    def create_about_us_button(self):
+        is_dark = self.main_app.page.theme_mode == ft.ThemeMode.DARK
+        return ft.Container(
+            content=ft.Row(
+                [
+                    ft.Icon(ft.Icons.INFO_OUTLINE, size=18),
+                    ft.Text("About us", size=14)
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                spacing=10,
+            ),
+            bgcolor=ft.Colors.WHITE24 if is_dark else ft.Colors.BLACK12,
+            padding=ft.padding.symmetric(vertical=10, horizontal=15),
+            border_radius=8,
+            on_click=self.about_us_click,
+            margin=ft.margin.only(top=10)
+        )
+
+    def about_us_click(self, e):
+        def close_dialog(e):
+            about_dialog.open = False
+            self.main_app.page.update()
+
+        about_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("About Bob The Lawyer"),
+            content=ft.Text("This is an AI-powered legal assistant designed to help with legal queries and document analysis in the context of Cameroonian law."),
+            actions=[ft.TextButton("Close", on_click=close_dialog)],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        self.main_app.page.dialog = about_dialog
+        about_dialog.open = True
+        self.main_app.page.update()
+        
     def on_table_click(self, e, table_name):
         self.current_selected = table_name 
         self.main_app.switch_discussion(table_name) 

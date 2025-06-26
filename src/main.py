@@ -496,6 +496,7 @@ class LawyerChatBotApp:
             else ft.Icons.DARK_MODE 
         )
         self.update_theme_colors() 
+        self.sidebar.refresh_sidebar(self.page)
     
         if self.current_discussion:  
             self.load_previous_messages(self.current_discussion) 
