@@ -3,6 +3,7 @@ import sqlite3
 from datetime import datetime 
 from model_handler import generate_reply  
 from sidebar import render_sidebar  
+from about_us import create_about_us_view
 import os           
 import platform    
 import requests     
@@ -19,7 +20,9 @@ class LawyerChatBotApp:
         self.page = page  
         self.page.theme_mode = ft.ThemeMode.LIGHT 
         self.chat = ft.ListView(expand=True, spacing=10, auto_scroll=True)  
-        self.current_discussion = None 
+        self.current_discussion = None
+        self.main_content_area = ft.Container(expand=True)
+        self.chat_view = None
 
         self.theme_toggle = ft.IconButton(
             icon=ft.Icons.DARK_MODE,  
@@ -77,7 +80,7 @@ class LawyerChatBotApp:
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
 
-        main_column = ft.Column(
+        self.chat_view = ft.Column(
             expand=True,  
             controls=[
                 header,  
@@ -96,11 +99,13 @@ class LawyerChatBotApp:
             ],
         )
 
+        self.main_content_area.content = self.chat_view
+
         content = ft.Row(
             controls=[
                 self.sidebar,  
                 ft.Container(width=1, bgcolor=ft.Colors.GREY_600 if self.page.theme_mode == ft.ThemeMode.DARK else ft.Colors.GREY_300), 
-                main_column, 
+                self.main_content_area,
             ],
             expand=True,  
         )
@@ -149,9 +154,7 @@ class LawyerChatBotApp:
 
 
     def load_previous_messages(self, table_to_load: str):
-
         self.clear_chat()  
-
         if table_to_load:  
 
             try:
@@ -191,9 +194,7 @@ class LawyerChatBotApp:
 
 
     def switch_discussion(self, table_name):
-
         self.current_discussion = table_name  
-
         if table_name is None:  
             self.clear_chat() 
             self.chat.controls.append( 
@@ -219,6 +220,17 @@ class LawyerChatBotApp:
             self.upload_button.disabled = False 
             self.search_button.disabled = False 
         self.page.update() 
+
+
+    def show_about_us_view(self):
+        about_us_content = create_about_us_view(self)
+        self.main_content_area.content = about_us_content
+        self.page.update()
+
+
+    def go_back_to_main(self):
+        self.main_content_area.content = self.chat_view
+        self.page.update()
 
 
     def create_user_message(self, message):
@@ -497,8 +509,10 @@ class LawyerChatBotApp:
         )
         self.update_theme_colors() 
         self.sidebar.refresh_sidebar(self.page)
-    
-        if self.current_discussion:  
+
+        if self.main_content_area.content is not self.chat_view:
+            self.show_about_us_view()
+        elif self.current_discussion:
             self.load_previous_messages(self.current_discussion) 
         self.page.update()
 
@@ -692,4 +706,4 @@ def main(page: ft.Page):
     """Main function to start the Flet application."""
     LawyerChatBotApp(page)  
 
-ft.app(target=main)
+ft.app(target=main, assets_dir="src/assets")

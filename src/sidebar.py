@@ -205,21 +205,8 @@ class ModernNavBar(ft.Container):
         )
 
     def about_us_click(self, e):
-        def close_dialog(e):
-            about_dialog.open = False
-            self.main_app.page.update()
+        self.main_app.show_about_us_view()
 
-        about_dialog = ft.AlertDialog(
-            modal=True,
-            title=ft.Text("About Bob The Lawyer"),
-            content=ft.Text("This is an AI-powered legal assistant designed to help with legal queries and document analysis in the context of Cameroonian law."),
-            actions=[ft.TextButton("Close", on_click=close_dialog)],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-        self.main_app.page.dialog = about_dialog
-        about_dialog.open = True
-        self.main_app.page.update()
-        
     def on_table_click(self, e, table_name):
         self.current_selected = table_name 
         self.main_app.switch_discussion(table_name) 
