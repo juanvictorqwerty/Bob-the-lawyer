@@ -55,6 +55,11 @@ jobs:
             --build-version $BUILD_VERSION \
             --verbose
 
+      - name: Copy photos directory
+        working-directory: ./src
+        run: cp -r ../photos build/linux/${{ env.APP_NAME }}/
+
+
       - name: Prepare artifact
         working-directory: ./src
         run: |
@@ -102,6 +107,12 @@ jobs:
             --build-number $env:BUILD_NUMBER `
             --build-version $env:BUILD_VERSION `
             --verbose
+
+      - name: Copy photos directory
+        working-directory: ./src
+        shell: pwsh
+        run: Copy-Item -Path ../photos -Destination build/windows/${{ env.APP_NAME }}/ -Recurse
+
 
       - name: Prepare Windows artifact
         working-directory: ./src
