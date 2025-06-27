@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Our Team</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .back-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            margin-right: 15px;
+            color: #333;
+        }
+        
+        .dark-mode .back-button {
+            color: #fff;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        .group-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            margin-bottom: 20px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .dark-mode .group-card {
+            background-color: #424242;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .group-card h2 {
+            text-align: center;
+            margin-top: 0;
+        }
+        
+        .group-image {
+            width: 100%;
+            max-width: 700px;
+            border-radius: 8px;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .divider {
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 20px 0;
+        }
+        
+        .dark-mode .divider {
+            background-color: #444;
+        }
+        
+        .members-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .member-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 250px;
+            text-align: center;
+        }
+        
+        .dark-mode .member-card {
+            background-color: #424242;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .member-image {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 10px;
+        }
+        
+        .member-name {
+            font-weight: bold;
+            font-size: 18px;
+            margin: 10px 0 5px;
+        }
+        
+        .member-role {
+            font-size: 14px;
+            font-style: italic;
+            color: #666;
+        }
+        
+        .dark-mode .member-role {
+            color: #aaa;
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .dark-mode .theme-toggle {
+            background: #ddd;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">☀️</button>
+    
+    <div class="header">
+        <button class="back-button" onclick="goBack()">←</button>
+        <h1>About Our Team</h1>
+    </div>
+    
+    <div class="group-card">
+        <h2>The team behind Bob the lawyer</h2>
+        <img src="Group10.jpeg" alt="Team photo" class="group-image">
+    </div>
+    
+    <div class="divider"></div>
+    
+    <div class="members-container">
+        <div class="member-card">
+            <img src="McBright.jpeg" alt="PIABEZIH McBright" class="member-image">
+            <div class="member-name">PIABEZIH McBright</div>
+            <div class="member-role">Created the API</div>
+        </div>
+        
+        <div class="member-card">
+            <img src="Armel.jpeg" alt="Armel ANDELA" class="member-image">
+            <div class="member-name">Armel ANDELA</div>
+            <div class="member-role">Was responsible for the multi-chatting, themes and the website</div>
+        </div>
+        
+        <div class="member-card">
+            <img src="Royce.jpeg" alt="Royce Stephane MASSIA" class="member-image">
+            <div class="member-name">Royce Stephane MASSIA</div>
+            <div class="member-role">Product owner,was in charge of the design and the Web searching functionality</div>
+        </div>
+        
+        <div class="member-card">
+            <img src="Rejoice.jpeg" alt="TENGHU Rejoice TEMBUG" class="member-image">
+            <div class="member-name">TENGHU Rejoice TEMBUG</div>
+            <div class="member-role">Was in charge of the document import and analysis functionality</div>
+        </div>
+        
+        <div class="member-card">
+            <img src="MIKe.jpg" alt="MIKE Juan Victor" class="member-image">
+            <div class="member-name">MIKE Juan Victor</div>
+            <div class="member-role">Scrum Master was responsible for the finetuning and general fixes</div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const themeButton = document.querySelector('.theme-toggle');
+            if (document.body.classList.contains('dark-mode')) {
+                themeButton.textContent = '🌙';
+            } else {
+                themeButton.textContent = '☀️';
+            }
+        }
+        
+        function goBack() {
+            // This would typically navigate back to the main page
+            alert('Navigating back to main chat...');
+            // window.location.href = 'index.html'; // Uncomment and set correct URL
+        }
+    </script>
+</body>
+</html>
