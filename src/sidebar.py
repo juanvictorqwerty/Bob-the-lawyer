@@ -24,12 +24,27 @@ class ModernNavBar(ft.Container):
             ],
         )
 
+        about_us_button = ft.Container(
+            height=20,
+            content=ft.Row(
+                [
+                    ft.Icon(ft.Icons.INFO_OUTLINE, size=16),
+                    ft.Text("About Us", size=14),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                spacing=5,
+            ),
+            on_click=lambda _: self.main_app.page.launch_url("https://bob-the-lawyer-team.wasmer.app/"),
+            tooltip="About Us",
+        )
+
         super().__init__(
             width=250,
             padding=10,
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
             content=ft.Column(
-                expand=True, controls=[self.discussion_list_view, self.create_about_us_button()]
+                expand=True,
+                controls=[self.discussion_list_view, about_us_button],
             ),
         )
 
@@ -183,29 +198,8 @@ class ModernNavBar(ft.Container):
             *self.create_table_list_items(table_names),
         ]
 
-        self.content.controls[1] = self.create_about_us_button()
         page.update()
 
-    def create_about_us_button(self):
-        is_dark = self.main_app.page.theme_mode == ft.ThemeMode.DARK
-        return ft.Container(
-            content=ft.Row(
-                [
-                    ft.Icon(ft.Icons.INFO_OUTLINE, size=18),
-                    ft.Text("About us", size=14)
-                ],
-                alignment=ft.MainAxisAlignment.CENTER,
-                spacing=10,
-            ),
-            bgcolor=ft.Colors.WHITE24 if is_dark else ft.Colors.BLACK12,
-            padding=ft.padding.symmetric(vertical=10, horizontal=15),
-            border_radius=8,
-            on_click=self.about_us_click,
-            margin=ft.margin.only(top=10)
-        )
-
-    def about_us_click(self, e):
-        self.main_app.show_about_us_view()
 
     def on_table_click(self, e, table_name):
         self.current_selected = table_name 
