@@ -3,7 +3,6 @@ import sqlite3
 from datetime import datetime 
 from model_handler import generate_reply  
 from sidebar import render_sidebar  
-from about_us import create_about_us_view
 import os           
 import platform    
 import requests     
@@ -221,19 +220,6 @@ class LawyerChatBotApp:
             self.search_button.disabled = False 
         self.page.update() 
 
-
-    def show_about_us_view(self):
-        photos_dir = "./photos"  # Relative path
-        simulated_member_images = []
-        for filename in ["McBright.jpeg", "Armel.jpeg", "Royce.jpeg", "Rejoice.jpeg", "MIKe.jpg","Group10.jpeg"]:
-            image_path = os.path.join(photos_dir, filename)  # Construct path
-            if os.path.exists(image_path):  # Check if file exists
-                simulated_member_images.append(image_path)
-            else:
-                simulated_member_images.append(filename)  # Fallback to assets
-
-        about_us_content = create_about_us_view(self, simulated_member_images) 
-        self.main_content_area.content = about_us_content
         
         self.page.update()
 
@@ -520,9 +506,7 @@ class LawyerChatBotApp:
         self.update_theme_colors() 
         self.sidebar.refresh_sidebar(self.page)
 
-        if self.main_content_area.content is not self.chat_view:
-            self.show_about_us_view()
-        elif self.current_discussion:
+        if self.current_discussion:
             self.load_previous_messages(self.current_discussion) 
         self.page.update()
 
