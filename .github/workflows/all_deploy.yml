@@ -57,7 +57,7 @@ jobs:
 
       - name: Copy photos directory
         working-directory: ./src
-        run: cp -r ../photos build/linux/${{ env.APP_NAME }}/
+        run: cp -r ./photos build/linux/${{ env.APP_NAME }}/
 
 
       - name: Prepare artifact
@@ -111,7 +111,7 @@ jobs:
       - name: Copy photos directory
         working-directory: ./src
         shell: pwsh
-        run: Copy-Item -Path ../photos -Destination build/windows/${{ env.APP_NAME }}/ -Recurse
+        run: Copy-Item -Path ./photos -Destination build/windows/${{ env.APP_NAME }}/ -Recurse
 
 
       - name: Prepare Windows artifact
