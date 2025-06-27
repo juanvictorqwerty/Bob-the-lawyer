@@ -223,8 +223,18 @@ class LawyerChatBotApp:
 
 
     def show_about_us_view(self):
-        about_us_content = create_about_us_view(self)
+        photos_dir = "./photos"  # Relative path
+        simulated_member_images = []
+        for filename in ["McBright.jpeg", "Armel.jpeg", "Royce.jpeg", "Rejoice.jpeg", "MIKe.jpg","Group10.jpeg"]:
+            image_path = os.path.join(photos_dir, filename)  # Construct path
+            if os.path.exists(image_path):  # Check if file exists
+                simulated_member_images.append(image_path)
+            else:
+                simulated_member_images.append(filename)  # Fallback to assets
+
+        about_us_content = create_about_us_view(self, simulated_member_images) 
         self.main_content_area.content = about_us_content
+        
         self.page.update()
 
 
