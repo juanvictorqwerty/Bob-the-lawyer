@@ -26,7 +26,7 @@ def _create_member_card(image_src: str, name: str, role: str, is_dark: bool) -> 
         elevation=4,
     )
 
-def create_about_us_view(main_app):
+def create_about_us_view(main_app, member_images=None):  # Add member_images parameter
     
     is_dark = main_app.page.theme_mode == ft.ThemeMode.DARK
 
@@ -36,12 +36,21 @@ def create_about_us_view(main_app):
         {"image": "Royce.jpeg", "name": "Royce Stephane MASSIA", "role": "Product owner,was in charge of the design and the Web searching functionality"},
         {"image": "Rejoice.jpeg", "name": "TENGHU Rejoice TEMBUG", "role": "Was in charge of the document import and analysis functionality"},
         {"image": "MIKe.jpg", "name": "MIKE Juan Victor", "role": "Scrum Master was responsible for the finetuning and general fixes"},
-    ]
+    ]    
+
+    if member_images: # if Member images are provided
+        for i, member in enumerate(members_data):
+            if i < len(member_images) and member_images[i]:
+                member["image"] = member_images[i] # Update image source with provided path
 
     member_cards = [_create_member_card(m["image"], m["name"], m["role"], is_dark) for m in members_data]
 
+    def get_image_path():
+        return "./photos/Group10.jpeg" 
+
+    group_image_path = get_image_path()
     group_card = ft.Card(
-        color=ft.colors.GREY_800 if is_dark else ft.colors.WHITE,
+        color=ft.Colors.GREY_800 if is_dark else ft.Colors.WHITE,
         elevation=4,
         content=ft.Container(
             padding=15,
@@ -49,9 +58,10 @@ def create_about_us_view(main_app):
                 [
                     ft.Text("The team behind Bob the lawyer", theme_style=ft.TextThemeStyle.HEADLINE_SMALL, text_align=ft.TextAlign.CENTER),
                     ft.Image(
-                        src="group10.jpeg",
-                        fit=ft.ImageFit.CONTAIN,  # Ensures the whole image is visible without cropping
+                        src=group_image_path,  # Use dynamically determined path
+                        fit=ft.ImageFit.CONTAIN,
                         border_radius=ft.border_radius.all(8),
+                        width=700,  # Adjust width as needed
                     )
                 ],
                 spacing=10,
